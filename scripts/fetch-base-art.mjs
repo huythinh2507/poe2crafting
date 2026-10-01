@@ -1,4 +1,4 @@
-// Download art for every droppable base that has none yet (armour, shields, foci, quivers, jewellery, belts).
+// Download art for every droppable base that has none yet (armour, shields, foci, quivers, jewellery, belts, jewels, relics).
 // Same trick as fetch-weapon-art.mjs: fetch from inside a poe2db page so the CDN sees a poe2db.tw referer.
 import fs from 'fs';
 import path from 'path';
@@ -9,7 +9,7 @@ const raw = JSON.parse(fs.readFileSync(path.join(root, 'public/data/data.json'),
 const out = rel => path.join(root, 'public/assets/items', rel + '.webp');
 
 const todo = [...new Set(raw.items.entries
-  .filter(i => i.domain === 1 && i.drop && i.image)
+  .filter(i => [1, 11, 8].includes(i.domain) && i.drop && i.image)
   .map(i => i.image.replace(/^Art\/2DItems\//, '')))].filter(rel => !fs.existsSync(out(rel)));
 console.log(`${todo.length} base images to fetch`);
 

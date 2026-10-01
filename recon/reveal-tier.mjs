@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto('http://localhost:5173/?group=1&class=4&item=3408');
+await p.waitForSelector('#itemBox');
+await p.evaluate(async () => { const E = await import('/js/engine.js'); const it = window.__craft.S.item; it.rarity = 'rare'; it.mods = []; it.unrevealed = [{ affix: 'prefix', minLevel: 0 }]; window.__craft.render?.(); });
+const r = await p.evaluate(async () => { const E = await import('/js/engine.js'); const it = window.__craft.S.item; return E.revealOptions(it, it.unrevealed[0]).map(e => [e.tier, e.lich, e.mod.minlvl]); });
+console.log(JSON.stringify(r));
+console.log(errs.join('\n') || 'no errors');
+await b.close();

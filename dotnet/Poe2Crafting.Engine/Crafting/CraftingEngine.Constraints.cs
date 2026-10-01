@@ -9,6 +9,14 @@ public sealed partial class CraftingEngine
     private static readonly HashSet<int> CasterClasses = new() { 45, 46, 47, 48, 49, 50, 56, 59, 60, 61, 62, 63, 64 };
     private static readonly HashSet<int> ShieldClasses = new() { 37, 38, 40, 41, 42 };
 
+    /// <summary>Most sockets the item can hold: can be pushed past the base count: body armour 3, gloves / boots 2, one-handed weapons 2, two-handed weapons 3.</summary>
+    public int MaxSockets(CraftItem item)
+    {
+        var baseSockets = Db.Items[item.BaseId].Sockets ?? 0;
+        if (baseSockets == 0) return 0;
+        return Math.Max(baseSockets, GroupOf(item) switch { 1 => 3, 2 or 3 or 7 => 2, 8 => 3, _ => 0 });
+    }
+
     private int GroupOf(CraftItem item) => Db.GroupOfClass(item.ClassId);
 
     public bool IsMartial(CraftItem item) => MartialClasses.Contains(item.ClassId);
@@ -66,7 +74,7 @@ public sealed partial class CraftingEngine
         ["refined_catalyst_base"] = i => !i.Corrupted && GroupOf(i) == 10,       // jewels
         ["not_maximum_quality"] = i => i.Quality < MaxQuality,
         ["socketable_base"] = CanSocket,
-        ["not_maximum_sockets"] = i => i.Sockets < (Db.Items[i.BaseId].Sockets ?? 0),
+        ["not_maximum_sockets"] = i => i.Sockets < MaxSockets(i),
         ["has_empty_socket"] = i => i.Socketed.Count < i.Sockets,
 
         // desecration

@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1500, height: 1400 } });
+const errs = [];
+p.on('pageerror', e => errs.push(e.message));
+await p.goto('http://localhost:5173/?group=1&class=4&item=3408');
+await p.waitForSelector('#itemBox');
+await p.click('[data-tab="Desecrate"]');
+await p.waitForSelector('[data-omen]');
+await p.waitForTimeout(800);
+const r = await p.$$eval('[data-omen]', bs => bs.map(x => [x.innerText.trim(), x.querySelector('img')?.naturalWidth || 0]));
+console.log(r);
+await p.locator('.chips.sub').first().screenshot({ path: 'recon/omen-icons.png' });
+console.log(errs.join('\n') || 'no errors');
+await b.close();

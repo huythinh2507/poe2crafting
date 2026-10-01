@@ -1,0 +1,32 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1400, height: 1100 } });
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto('http://localhost:5173/?group=1&class=4&item=3408'); await p.waitForSelector('#itemBox');
+await p.click('[data-tab="Currencies"]');
+await p.locator('.cur:not([disabled])').filter({ hasText: /Alchemy/ }).first().click(); await p.click('#itemBox');
+const sel = async re => { const h = { chaos: 'poe2_chaos', annul: 'poe2_annulment' }[re]; await p.evaluate(h => { const c = window.__craft; c.S.method = c.CATALOGUE.find(m => m.handler === h); c.renderCraft(); }, h); await p.waitForTimeout(200); };
+const armed = () => p.$$eval('.armed-chip', c => c.map(x => x.innerText.replace('×', '').trim()));
+const state = () => p.evaluate(() => ({ armed: [...window.__craft.ctx.omens], pinned: [...window.__craft.ctx.pinned] }));
+const out = {};
+await sel('chaos'); await p.click('[data-omen="erasure_prefix"]');
+out['1 chaos: Sinistral Erasure armed'] = await armed();
+await sel('annul');
+out['2 switch to Annulment: bar empty, state cleared'] = [await armed(), (await state()).armed];
+await p.click('[data-omen="annul_suffix"]');
+out['3 Annulment: only its own omen'] = await armed();
+await sel('chaos');
+out['4 back to Chaos: Annulment omen gone, nothing carried'] = [await armed(), (await state()).armed];
+// pinned survives but is hidden under another currency
+await p.click('[data-pin="erasure_prefix"]');
+out['5 chaos pinned'] = [await armed(), (await state()).pinned];
+await sel('annul');
+out['6 Annulment: pinned Erasure hidden, still pinned'] = [await armed(), (await state()).pinned];
+await sel('chaos');
+out['7 back on Chaos: pinned Erasure shown again'] = await armed();
+// desecrate tab keeps its omens through the tab
+await p.click('[data-tab="Desecrate"]'); await p.waitForTimeout(200);
+await p.click('[data-omen="echoes"]'); out['8 Desecrate: Abyssal Echoes armed'] = await armed();
+await p.click('[data-tab="Currencies"]'); await p.waitForTimeout(200);
+out['9 leave Desecrate: echoes cleared'] = (await state()).armed;
+console.log(JSON.stringify(out, null, 1)); console.log(errs.join('\n') || 'no errors');
+await b.close();

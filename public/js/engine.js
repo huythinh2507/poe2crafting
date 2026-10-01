@@ -4,7 +4,10 @@ import { DB, classPool, lichPool, poolFor, corruptionPool, affixOf, essenceModId
 export const MAX_AFFIX = { normal: [0, 0], magic: [1, 1], rare: [3, 3] };
 export const MAX_QUALITY = 20;
 export const MAX_QUALITY_VAAL = 30; // infusers may exceed the cap by up to 10%
-const INFUSER_CORRUPT_CHANCE = 0.25; // assumption: wiki gives no number
+// Vaal Infusers (community-tested; GGG publishes no numbers): need the item at 20% quality or more, add 1-2% per use and
+// instead corrupt it (no quality gained) with a chance of 5% per point above 20%: 0% at 20%, 5% at 21% ... 45% at 29%.
+export const infuserCorruptChance = quality => Math.min(0.95, Math.max(0, quality - MAX_QUALITY) * 0.05);
+const infuserGain = () => 1 + Math.floor(Math.random() * 2);
 const REVEAL_OPTIONS = 3;
 
 // ---- Session context set by the UI (omens + tunable assumptions) ----
@@ -33,19 +36,19 @@ export const OMENS = [
   { id: 'exalt_two', name: 'Omen of Greater Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds two random modifiers.' },
   { id: 'exalt_prefix', name: 'Omen of Sinistral Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds only prefix modifiers.', excl: 'exalt' },
   { id: 'exalt_suffix', name: 'Omen of Dextral Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds only suffix modifiers.', excl: 'exalt' },
-  { id: 'exalt_homog', name: 'Omen of Homogenising Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds a modifier of the same type (shares a tag) as an existing modifier.' },
+  { id: 'exalt_homog', name: 'Omen of Homogenising Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds a modifier of the same type (shares a tag) as an existing modifier.', retired: true },
   { id: 'exalt_catalyst', name: 'Omen of Catalysing Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb consumes all catalyst quality: modifiers with the catalyst\'s tag become more likely (weight x (1 + 0.2 x quality)).' },
   // Regal Orb
   { id: 'regal_prefix', name: 'Omen of Sinistral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a prefix.', excl: 'regal', retired: true },
   { id: 'regal_suffix', name: 'Omen of Dextral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a suffix.', excl: 'regal', retired: true },
-  { id: 'regal_homog', name: 'Omen of Homogenising Coronation', for: 'poe2_regal', hint: 'Regal Orb adds a modifier of the same type (shares a tag) as an existing modifier.' },
+  { id: 'regal_homog', name: 'Omen of Homogenising Coronation', for: 'poe2_regal', hint: 'Regal Orb adds a modifier of the same type (shares a tag) as an existing modifier.', retired: true },
   // Orb of Alchemy
   { id: 'alch_prefix', name: 'Omen of Sinistral Alchemy', for: 'poe2_alchemy', hint: 'Alchemy results in the maximum number of prefixes (3 prefixes, 1 suffix).', excl: 'alch', retired: true },
   { id: 'alch_suffix', name: 'Omen of Dextral Alchemy', for: 'poe2_alchemy', hint: 'Alchemy results in the maximum number of suffixes (3 suffixes, 1 prefix).', excl: 'alch', retired: true },
   // Vaal / Divine
-  { id: 'corruption', name: 'Omen of Corruption', for: 'poe2_vaal', hint: 'Vaal Orb always results in a change (never the "no change" outcome).' },
+  { id: 'corruption', name: 'Omen of Corruption', for: 'poe2_vaal', hint: 'Vaal Orb always results in a change (never the "no change" outcome).', retired: true },
   { id: 'blessed', name: 'Omen of the Blessed', for: 'poe2_divine', hint: 'Divine Orb rerolls only implicit modifiers.' },
-  { id: 'sanctification', name: 'Omen of Sanctification', for: 'poe2_divine', todo: true, hint: 'Sanctification is not simulated yet.' },
+  { id: 'sanctification', name: 'Omen of Sanctification', for: 'poe2_divine', hint: 'Divine Orb on a Rare item multiplies every modifier value by a random 0.78x-1.22x (rounded up) instead of rerolling it, then locks the item (Sanctified: no more crafting). Can push a roll above its normal maximum.' },
   // Perfect / Corrupted / Alloy essences
   { id: 'crystal_prefix', name: 'Omen of Sinistral Crystallisation', for: 'poe2_essence', hint: 'Perfect / Corrupted essence (and alloy) removes only a prefix.', excl: 'crystal' },
   { id: 'crystal_suffix', name: 'Omen of Dextral Crystallisation', for: 'poe2_essence', hint: 'Perfect / Corrupted essence (and alloy) removes only a suffix.', excl: 'crystal' },
@@ -99,7 +102,7 @@ const rnd = (min, max) => {
 const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
 export function rollMod(mod) {
-  return { id: mod.id, rolls: mod.stats.map(s => rnd(s.range[0], s.range[1])) };
+  return { id: mod.id, rolls: mod.stats.map(s => (Array.isArray(s.range) ? rnd(s.range[0], s.range[1]) : 0)) };
 }
 
 export function newItem(base, ilvl = 100) {
@@ -113,6 +116,7 @@ export function newItem(base, ilvl = 100) {
     sockets: base.sockets || 0,
     socketed: [],     // [{ item, name, lines, influence?, suffix?, crafted?, transform? }]
     corrupted: false,
+    sanctified: false, // Sanctified by a Divine Orb + Omen of Sanctification: values multiplied once, item locked
     corruption: [],   // Vaal enchant implicits
     lock: false,      // Hinekora's Lock armed
   };
@@ -147,8 +151,17 @@ export function implicitSlots(item) {
   return d;
 }
 
+// Jewels carry fewer affixes than gear: 2 prefixes + 2 suffixes when rare (Time-Lost jewels 3 + 3), 1 + 1 when magic. Relics can only be
+// magic (1 + 1), so a rare relic has no slots.
+const TIME_LOST_JEWELS = new Set([76, 77, 78, 79]);
+const affixLimits = item => {
+  const g = groupOf(item);
+  if (g === 10) return { ...MAX_AFFIX, rare: TIME_LOST_JEWELS.has(item.classId) ? [3, 3] : [2, 2] };
+  if (g === 11) return { ...MAX_AFFIX, rare: [0, 0] };
+  return MAX_AFFIX;
+};
 export const maxAffix = item => {
-  const [p, s] = MAX_AFFIX[item.rarity];
+  const [p, s] = affixLimits(item)[item.rarity];
   if (item.rarity !== 'rare') return [p, s];
   const slots = implicitSlots(item);
   return [Math.max(0, p + slots.prefix), Math.max(0, s + slots.suffix + bonus(item).suffix)];
@@ -272,6 +285,11 @@ const removable = item => item.mods.filter(m => !m.fractured);
  */
 export const fractureCandidates = item => item.mods.filter(m => !m.fractured);
 
+/** The placeholder "Bears the Mark of the Abyssal Lord" mod an Essence of the Abyss adds. A bone turns it into an unrevealed desecrated mod. */
+const isMarkMod = mod => /^EssenceAbyss/.test(mod?.key || '');
+export const isMark = m => isMarkMod(DB.mods.get(m.id));
+const MARK_MIN_LEVEL = 40; // the reveal from a Mark is guaranteed to be level 40+ (same as an Ancient bone)
+
 /**
  * Everything a removal could hit, after omen filters.
  * opts: kind ('prefix'|'suffix'), desecrated (Omen of Light), whittle (Omen of Whittling).
@@ -282,6 +300,7 @@ export function removalPool(item, opts = {}) {
     ...removable(item).map(m => ({ m, level: DB.mods.get(m.id).minlvl, affix: affixOfMod(m), desecrated: !!m.desecrated })),
     ...item.unrevealed.map(u => ({ u, level: 1, affix: u.affix, desecrated: true })),
   ];
+  if (opts.noMark) c = c.filter(x => !x.m || !isMark(x.m));
   if (opts.kind) c = c.filter(x => x.affix === opts.kind);
   if (opts.desecrated) c = c.filter(x => x.desecrated);
   if (opts.whittle && c.length) {
@@ -292,9 +311,9 @@ export function removalPool(item, opts = {}) {
 }
 
 function removeCandidate(item, c) {
-  if (c.m) { item.mods.splice(item.mods.indexOf(c.m), 1); return { op: 'remove', mod: c.m }; }
+  if (c.m) { item.mods.splice(item.mods.indexOf(c.m), 1); return { op: 'remove', mod: c.m, affix: c.affix }; }
   item.unrevealed.splice(item.unrevealed.indexOf(c.u), 1);
-  return { op: 'remove', text: `Unrevealed desecrated ${c.u.affix}` };
+  return { op: 'remove', text: `Unrevealed desecrated ${c.u.affix}`, affix: c.affix };
 }
 
 /** Remove one random mod (optionally only of `kind`). Returns a change object or null. */
@@ -318,6 +337,7 @@ export function removalOpts(handler, essenceReplaces = false) {
   } else if (handler === 'poe2_essence' && essenceReplaces) {
     if (o.has('crystal_prefix')) r.kind = 'prefix';
     if (o.has('crystal_suffix')) r.kind = 'suffix';
+    r.noMark = true; // an essence replacing a mod never takes the Mark of the Abyssal Lord away
   }
   return r;
 }
@@ -330,6 +350,12 @@ const groupOf = item => DB.classes.get(item.classId)?.group;
 const isArmour = item => [1, 2, 3, 4].includes(groupOf(item)) || SHIELDS.has(item.classId);
 export const isMartial = item => MARTIAL.has(item.classId);
 export const isCaster = item => CASTER.has(item.classId);
+/** Most sockets the item can hold: can be pushed past the base count: body armour 3, gloves / boots 2, one-handed weapons 2, two-handed weapons 3. */
+export const maxSockets = item => {
+  const base = baseOf(item).sockets || 0;
+  const cap = { 1: 3, 2: 2, 3: 2, 7: 2, 8: 3 }[groupOf(item)] || 0;
+  return base ? Math.max(base, cap) : 0;
+};
 const canSocket = item => (baseOf(item).sockets || 0) > 0;
 const noDesecrated = item => !item.unrevealed.length && !item.mods.some(m => m.desecrated);
 
@@ -341,9 +367,9 @@ const CONSTRAINTS = {
   rarity_not_rare: i => i.rarity !== 'rare',
   rarity_not_normal: i => i.rarity !== 'normal',
   can_be_rare: () => true,
-  is_modifiable: i => !i.corrupted,
-  can_corrupt: i => !i.corrupted && DB.classes.get(i.classId)?.corrupt !== false,
-  corruptable_base: i => !i.corrupted,
+  is_modifiable: i => !i.corrupted && !i.sanctified,
+  can_corrupt: i => !i.corrupted && !i.sanctified && DB.classes.get(i.classId)?.corrupt !== false,
+  corruptable_base: i => !i.corrupted && !i.sanctified,
   tablet_base: () => false,
   not_strongbox: i => groupOf(i) !== 15,
   open_affix: i => { const o = openSlots(i); return o.prefix > 0 || o.suffix > 0; },
@@ -354,11 +380,11 @@ const CONSTRAINTS = {
   armour_quality_base: isArmour,
   flask_base: i => groupOf(i) === 9,
   ring_or_amulet_base: i => i.classId === 33 || i.classId === 34,
-  catalyst_base: i => !i.corrupted && (i.classId === 33 || i.classId === 34 || i.classId === 105), // rings, amulets, Grasping Mail
-  refined_catalyst_base: i => !i.corrupted && groupOf(i) === 10,                                 // jewels
+  catalyst_base: i => !i.corrupted && !i.sanctified && (i.classId === 33 || i.classId === 34 || i.classId === 105), // rings, amulets, Grasping Mail
+  refined_catalyst_base: i => !i.corrupted && !i.sanctified && groupOf(i) === 10,                                 // jewels
   not_maximum_quality: i => i.quality < MAX_QUALITY,
   socketable_base: canSocket,
-  not_maximum_sockets: i => i.sockets < (baseOf(i).sockets || 0),
+  not_maximum_sockets: i => i.sockets < maxSockets(i),
   no_fracture: i => !i.mods.some(m => m.fractured),
   essence_base: () => true,
   has_empty_socket: i => i.socketed.length < i.sockets,
@@ -379,12 +405,20 @@ const BONE_BASES = [
   i => CONSTRAINTS.desecration_vertebrae_base(i),
 ];
 // Extra per-handler requirements that aren't in the site's constraint lists.
+CONSTRAINTS.can_be_rare = i => groupOf(i) !== 11;   // relics stay magic
 const HANDLER_EXTRA = {
+  poe2_regal: ['can_be_rare'],
+  poe2_alchemy: ['can_be_rare'],
   poe2_fracture: ['no_fracture'],
-  poe2_vaal_infuser: ['not_corrupted'],
+  poe2_vaal_infuser: ['not_corrupted', 'infuser_target'],
   hinekora_lock: ['not_locked'],
 };
-CONSTRAINTS.not_corrupted = i => !i.corrupted;
+// Jewellery has no plain quality to infuse: the Vaal Catalyst Infuser pushes the catalyst quality already on the item.
+const isJewellery = i => i.classId === 33 || i.classId === 34;
+const infuserQuality = i => (isJewellery(i) ? i.catalyst?.quality : i.quality) ?? 0;
+const infuserCap = i => (isJewellery(i) ? catalystCap(i) : MAX_QUALITY) + (MAX_QUALITY_VAAL - MAX_QUALITY);
+CONSTRAINTS.infuser_target = i => infuserQuality(i) >= MAX_QUALITY && infuserQuality(i) < infuserCap(i);
+CONSTRAINTS.not_corrupted = i => !i.corrupted && !i.sanctified;
 CONSTRAINTS.not_locked = i => !i.lock;
 
 export const checkConstraints = (item, list = [], handler) =>
@@ -477,7 +511,7 @@ const catalystWeights = c => ({ [catalystTagId(c.tag)]: catalystFactor(c.quality
 function useCatalyst(item, tag) {
   if (item.catalyst && item.catalyst.tag !== tag) item.catalyst = null; // a different type wipes the old quality
   const before = item.catalyst?.quality || 0;
-  const quality = Math.min(catalystCap(item), before + catalystGain(item.ilvl));
+  const quality = Math.max(before, Math.min(catalystCap(item), before + catalystGain(item.ilvl)));  // never lowers infused quality
   item.catalyst = { tag, quality };
   return note(`${tag[0].toUpperCase() + tag.slice(1)} catalyst quality +${quality - before}% (now ${quality}%)`);
 }
@@ -502,6 +536,7 @@ export const essenceReplaces = essence => essence.type >= 3; // Perfect, Corrupt
 export function essenceApplicable(item, essence) {
   const mod = essenceMod(item, essence);
   if (!mod) return false;
+  if (isMarkMod(mod)) return item.rarity === 'rare' && removalPool(item, { noMark: true }).length > 0; // not tied to the crafted-mod limit
   const clash = item.mods.some(m => DB.mods.get(m.id).group === mod.group);
   if (!essenceReplaces(essence)) return item.rarity === 'magic' && !clash;
   return item.rarity === 'rare' && !craftedFull(item);
@@ -509,7 +544,19 @@ export function essenceApplicable(item, essence) {
 
 function essence(item, _o, method) {
   const e = method.essence;
-  const mod = essenceMod(item, e);
+  let mod = essenceMod(item, e);
+  // Essence of the Abyss: removes a modifier (the side the Crystallisation omen picks, else random) and puts the Mark of the
+  // Abyssal Lord in its place, on the same side. The Mark is a placeholder, not a crafted modifier, so it ignores the crafted limit.
+  if (isMarkMod(mod)) {
+    if (item.rarity !== 'rare') return null;
+    const filter = removalOpts('poe2_essence', true);
+    const gone = removeRandom(item, filter.kind, { noMark: true });
+    if (!gone) return null;
+    const markMod = essenceModIds(e.id, item.classId).map(id => DB.mods.get(id)).find(m => affixOf(m) === gone.affix);
+    const rolled = rollMod(markMod || mod);
+    item.mods.push(rolled);
+    return [gone, { op: 'add', mod: rolled }];
+  }
   if (!mod) return null;
   const kind = affixOf(mod);
   if (!essenceReplaces(e)) {
@@ -522,7 +569,7 @@ function essence(item, _o, method) {
   }
   if (item.rarity !== 'rare' || craftedFull(item)) return null;
   const filter = removalOpts('poe2_essence', true);
-  const gone = removeRandom(item, filter.kind || (openSlots(item)[kind] > 0 ? null : kind));
+  const gone = removeRandom(item, filter.kind || (openSlots(item)[kind] > 0 ? null : kind), { noMark: filter.noMark });
   if (!gone) return null;
   if (item.mods.some(m => DB.mods.get(m.id).group === mod.group) || openSlots(item)[kind] <= 0) return null;
   const rolled = { ...rollMod(mod), crafted: true };
@@ -542,10 +589,14 @@ function socketText(stat) {
 }
 
 /** Effect lines of socketable `e` on `item`, or null if it does nothing there. */
-export function socketEffect(item, e) {
+export function socketStat(item, e) {
   const classKey = DB.classes.get(item.classId)?.class;
-  const stat = (isMartial(item) && e.martial) || (isCaster(item) && e.caster) || (isArmour(item) && e.armour)
+  return (isMartial(item) && e.martial) || (isCaster(item) && e.caster) || (isArmour(item) && e.armour)
     || e.class?.[classKey] || e.all || null;
+}
+
+export function socketEffect(item, e) {
+  const stat = socketStat(item, e);
   return stat ? [socketText(stat)] : null;
 }
 
@@ -588,6 +639,15 @@ export function socketSlots(item, e) {
   return out;
 }
 
+/** The item-local stats a rune adds: [{ id, value }]. "Adds # to # X Damage" runes carry a min-max range, so they give both stats. */
+function localRuneStats(st) {
+  if (!st.local) return [];
+  const id = DB.raw.stats[st.index]?.id;
+  const added = id?.match(/^local_minimum_added_(\w+)_damage$/);
+  if (added) return [{ id, value: st.range[0] }, { id: `local_maximum_added_${added[1]}_damage`, value: st.range[1] }];
+  return [{ id, value: st.range[0] }];
+}
+
 function socket(item, _o, method) {
   const e = method.socket;
   const lines = socketEffect(item, e);
@@ -599,7 +659,10 @@ function socket(item, _o, method) {
   if (slot == null) slot = item.socketed.length < item.sockets ? item.socketed.length : -1;
   if (!slots.includes(slot)) return null;
   const name = DB.text(DB.items.get(e.item)?.label);
-  const rec = { item: e.item, limit: e.limit, name, lines, bound: !!e.bound, ...metaEffects(lines.join(' ')) };
+  const st = socketStat(item, e);
+  // local stats (% increased Physical Damage, Armour, ...) change the item's own displayed numbers
+  const localStats = localRuneStats(st);
+  const rec = { item: e.item, limit: e.limit, name, lines, localStats, bound: !!e.bound, ...metaEffects(lines.join(' ')) };
   const replaced = item.socketed[slot];
   if (replaced) item.socketed[slot] = rec; else item.socketed.push(rec);
   const out = note(`Socketed ${name}: ${lines.join(' / ')}${replaced ? ` (destroyed ${replaced.name})` : ''}`);
@@ -610,6 +673,10 @@ function socket(item, _o, method) {
       return to === m.id ? m : { ...m, ...rollMod(DB.mods.get(to)), id: to };
     });
   }
+  // losing an augment that raised the crafted limit keeps the crafted mods; the item is just over the limit
+  const craftedCount = item.mods.filter(m => m.crafted).length;
+  if (replaced?.crafted && craftedCount > 1 + bonus(item).crafted)
+    out.push(...note(`${replaced.name} is gone: the crafted mods stay, but the item is over its crafted limit (${craftedCount}/${1 + bonus(item).crafted})`));
   return out;
 }
 
@@ -624,6 +691,14 @@ function desecrate(item, o) {
     const out = gone.map(m => { item.unrevealed.push({ affix: affixOfMod(m), minLevel }); return { op: 'remove', mod: m }; });
     item.corrupted = true;
     return [...out, ...note(`Putrefaction: ${gone.length} unrevealed desecrated modifiers, item corrupted`)];
+  }
+  // the bone lands on a Mark of the Abyssal Lord (Essence of the Abyss) and turns it into an unrevealed desecrated mod
+  const mark = item.mods.find(m => isMark(m) && !m.fractured);
+  if (mark) {
+    item.mods.splice(item.mods.indexOf(mark), 1);
+    const affix = affixOfMod(mark);
+    item.unrevealed.push({ affix, minLevel: Math.max(minLevel, MARK_MIN_LEVEL) });
+    return [{ op: 'remove', mod: mark }, ...note(`The Mark of the Abyssal Lord became an unrevealed desecrated ${affix} (level ${MARK_MIN_LEVEL}+)`)];
   }
   const open = openSlots(item);
   let affix = ctx.omens.has('sinistral') ? 'prefix' : ctx.omens.has('dextral') ? 'suffix' : null;
@@ -691,6 +766,27 @@ export function revealMod(item, idx, entry) {
   return [{ op: 'add', mod: m }];
 }
 
+/**
+ * Divine Orb + Omen of Sanctification (Rare items only): every modifier value is multiplied by its own random 0.78x-1.22x
+ * (0.01 steps, 45 equally likely values), rounded UP, instead of being rerolled inside its range, so a roll can end above its
+ * maximum. The item is then Sanctified and cannot be crafted on. Fractured modifiers are locked against currency.
+ */
+const SANCTIFY_STEPS = 45; // 0.78 ... 1.22
+function sanctify(item) {
+  if (item.rarity !== 'rare' || item.corrupted || item.sanctified) return null;
+  const out = [];
+  const scale = m => {
+    const factor = (78 + Math.floor(Math.random() * SANCTIFY_STEPS)) / 100;
+    const n = { ...m, rolls: m.rolls.map(v => (Number.isInteger(v) ? Math.ceil(v * factor - 1e-9) : Math.ceil(v * factor * 100 - 1e-9) / 100)) };
+    out.push({ op: 'reroll', mod: n });
+    return n;
+  };
+  item.implicits = item.implicits.map(scale);
+  item.mods = item.mods.map(m => (m.fractured ? m : scale(m)));
+  item.sanctified = true;
+  return [...out, ...note('Sanctified: values multiplied by 0.78x-1.22x (rounded up); the item can no longer be modified')];
+}
+
 // ---- Handlers: mutate item, return change list, or null if impossible ----
 const HANDLERS = {
   poe2_transmutation: (i, o) => { i.rarity = 'magic'; return added(addRandom(i, o)); },
@@ -724,6 +820,7 @@ const HANDLERS = {
     return out.length ? out : null;
   },
   poe2_divine: i => {
+    if (ctx.omens.has('sanctification')) return sanctify(i);
     const out = [];
     const reroll = m => { const n = { ...m, ...rollMod(DB.mods.get(m.id)) }; out.push({ op: 'reroll', mod: n }); return n; };
     i.implicits = i.implicits.map(reroll);
@@ -740,9 +837,17 @@ const HANDLERS = {
   },
   poe2_vaal: vaal,
   poe2_vaal_infuser: i => {
-    const out = addQuality(i, MAX_QUALITY_VAAL);
-    if (Math.random() < INFUSER_CORRUPT_CHANCE) { i.corrupted = true; out.push(...note('Corrupted')); }
-    return out;
+    const q = infuserQuality(i);
+    if (q < MAX_QUALITY || q >= infuserCap(i)) return null;
+    // either the item corrupts (and gains nothing) or it gains 1-2% quality
+    if (Math.random() < infuserCorruptChance(q)) { i.corrupted = true; return note(`Corrupted (${Math.round(infuserCorruptChance(q) * 100)}% chance at ${q}% quality) - no quality gained`); }
+    const to = Math.min(infuserCap(i), q + infuserGain());
+    if (isJewellery(i)) {
+      i.catalyst.quality = to;
+      return note(`${i.catalyst.tag[0].toUpperCase() + i.catalyst.tag.slice(1)} catalyst quality +${to - q}% (now ${to}%)`);
+    }
+    i.quality = to;
+    return note(`Quality +${to - q}% (now ${to}%)`);
   },
   ...Object.fromEntries(Object.entries(CATALYSTS).flatMap(([name, tag]) => [
     ['poe2_catalyst_' + name, i => useCatalyst(i, tag)],
@@ -834,7 +939,7 @@ const RARITY_ORDER = { normal: 0, magic: 1, rare: 2 };
  * Returns the added mod, or null if it cannot go on (same group present, no free slot, level too high, corrupted).
  */
 export function addModManually(item, modId, { desecrated = false } = {}) {
-  if (item.corrupted) return null;
+  if (item.corrupted || item.sanctified) return null;
   const entry = (desecrated ? lichPool(item.classId) : fullPool(item)).find(x => x.mod.id === modId);
   if (!entry || entry.mod.minlvl > item.ilvl) return null;
   if (item.mods.some(m => DB.mods.get(m.id).group === entry.mod.group)) return null;
@@ -887,6 +992,7 @@ export function localStat(item, statId) {
   for (const m of [...item.mods, ...item.implicits, ...item.corruption]) {
     DB.mods.get(m.id)?.stats.forEach((s, i) => { if (DB.raw.stats[s.index]?.id === statId) total += m.rolls[i] || 0; });
   }
+  for (const r of item.socketed) for (const l of r.localStats || []) if (l.id === statId) total += l.value;   // local runes
   return total;
 }
 
@@ -902,6 +1008,8 @@ function defenceIncrease(item, kind) {
       if (/^local_.*_\+%$/.test(id) && DEFENCE_KEYS[kind].test(id)) total += m.rolls[i] || 0;
     });
   }
+  for (const r of item.socketed) for (const l of r.localStats || [])
+    if (/^local_.*_\+%$/.test(l.id || '') && DEFENCE_KEYS[kind].test(l.id)) total += l.value;   // local runes (Iron Rune)
   return total;
 }
 
@@ -952,7 +1060,8 @@ export function itemStats(item) {
       const final = (b + localStat(item, DEFENCE_FLAT[key])) * (1 + defenceIncrease(item, key) / 100) * (1 + quality / 100);
       defences.push({ key, label, base: b, final });
     }
-    if (bs.defences.ward) defences.push({ key: 'ward', label: 'Runic Ward', base: bs.defences.ward, final: bs.defences.ward });
+    if (bs.defences.ward) defences.push({ key: 'ward', label: 'Runic Ward', base: bs.defences.ward,
+      final: (bs.defences.ward + localStat(item, 'local_ward')) * (1 + localStat(item, 'local_ward_+%') / 100) });
     const block = bs.block ? { base: bs.block, final: bs.block * (1 + localStat(item, 'local_block_chance_+%') / 100) } : null;
     return { kind: 'armour', defences, block };
   }
@@ -963,7 +1072,7 @@ export function itemStats(item) {
   return {
     kind: 'caster', skills: bs.skills.map(name => ({ name, level })),
     skillQuality: isSceptre ? 0 : quality,
-    spirit: bs.spirit ? { base: bs.spirit, final: bs.spirit } : null,
+    spirit: bs.spirit ? { base: bs.spirit, final: bs.spirit * (1 + localStat(item, 'local_spirit_+%') / 100) } : null,
   };
 }
 
@@ -984,6 +1093,7 @@ export function modLines(mod, rolls, item) {
   const labels = mod.stats.map(s => DB.text(s.label));
   const sc = v => catalystScaled(item, mod, v);   // catalyst quality scales the value and its range
   const fmt = (s, i) => {
+    if (!Array.isArray(s.range)) return '';        // stat with no value (Essence of Delirium's granted passive)
     const [a, b] = s.range.map(sc);
     const v = rolls ? rolls[i] : null;
     if (v == null) return a === b ? fmtNum(a) : `(${fmtNum(a)}-${fmtNum(b)})`;

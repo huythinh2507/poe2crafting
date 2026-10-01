@@ -32,9 +32,11 @@ export function classesOfGroup(groupId) {
   return (DB.groupClasses[groupId] || []).map(id => DB.classes.get(id)).filter(Boolean);
 }
 
+// Item domains with craftable bases: 1 = equipment, 11 = jewels, 8 = relics.
+const BASE_DOMAINS = new Set([1, 11, 8]);
 export function basesOfClass(classId) {
   return [...DB.items.values()]
-    .filter(i => i.class === classId && i.domain === 1 && i.drop)
+    .filter(i => i.class === classId && BASE_DOMAINS.has(i.domain) && i.drop)
     .sort((a, b) => a.drop - b.drop || DB.text(a.label).localeCompare(DB.text(b.label)));
 }
 

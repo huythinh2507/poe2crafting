@@ -66,7 +66,7 @@ h2 { margin: 22px 0 10px; font: bold 17px "Montserrat", system-ui, sans-serif; c
 /* narrow screens stack into one column: show the item first, not pinned */
 @media (max-width: 960px) { .layout { grid-template-columns: 1fr; } .sticky { position: static; max-height: none; overflow: visible; order: -1; } }
 
-.bases { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; max-height: 420px; overflow: auto; }
+.bases { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
 .base { text-align: left; background: var(--panel-2); border: 1px solid transparent; border-radius: 4px; padding: 6px 10px; display: flex; justify-content: space-between; gap: 8px; }
 .base:hover { border-color: var(--gold); }
 .base span:last-child { color: var(--dim); font-size: 13px; white-space: nowrap; }
@@ -342,3 +342,8 @@ b.crafted { color: #f4f1ea; }
 .item-body hr, .item-body .sep { margin: 4px 0; }
 .dps { margin-top: 2px; padding-top: 3px; gap: 0 14px; font-size: 14px; }
 .sticky .log { max-height: 96px; overflow-y: auto; }
+.chips.sub .chip:has(.omen-icon) { display: inline-flex; align-items: center; gap: 6px; }
+.omen-icon { width: 26px; height: 26px; }
+/* picker: breathing room below the base list so the page can scroll a little past it */
+#picker { padding-bottom: 80px; }
+.sanctified { color: #e8d27a; font-weight: bold; margin-top: 4px; }
