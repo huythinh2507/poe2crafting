@@ -42,6 +42,13 @@ const R = await p.evaluate(async () => {
   const had = E.bonus(it).crafted;
   sock(it, 'Desert Rune', 0);
   t("B7 replacing Astrid's Creativity drops its crafted-mod bonus", had === 1 && E.bonus(it).crafted === 0, `crafted bonus ${had} -> ${E.bonus(it).crafted}`);
+  // item holding 2 crafted mods keeps both when Astrid's Creativity is overwritten
+  it = mk(4, 2); sock(it, ASTRID);
+  const pool = [...DB.mods.values()].filter(m => m.key).slice(0, 2);
+  it.rarity = 'rare';
+  it.mods = pool.map(m => ({ ...E.rollMod(m), crafted: true }));
+  const rr = sock(it, 'Desert Rune', 0);
+  t('B7b overwriting Astrid keeps 2 crafted mods and notes over-limit', it.mods.filter(m => m.crafted).length === 2 && E.craftedFull(it) && rr.some(o => /over its crafted limit/.test(o.text)), rr && rr.map(o => o.text).join(' | '));
   // the data flags: Serle's Triumph and Thrud's Might are bound, Astrid's Creativity is not
   t('B8 data flags: Serle bound, Astrid not bound', find(SERLE).bound === true && find(ASTRID).bound === false, `serle=${find(SERLE).bound} astrid=${find(ASTRID).bound}`);
 

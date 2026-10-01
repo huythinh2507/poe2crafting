@@ -44,12 +44,14 @@ function methodCatalogue() {
     { id: 9001, handler: 'hinekora_lock', name: "Hinekora's Lock", group: 'Currencies', constraints: ['is_modifiable'] });
   return list;
 }
+// Item groups the simulator does not craft: flasks, charms, relics, tablets, waystones, strongboxes.
+const HIDDEN_GROUPS = new Set([9, 14, 11, 12, 13, 15]);
 let CATALOGUE = [];
 const QUALITY_HINT = '+5% quality (normal) / +2% (magic) / +1% (rare), max 20%.';
 const HINTS = {
   poe2_fracture: 'Locks one random mod permanently. Needs a rare with 4+ mods.',
   poe2_vaal: '25% each: no change / reroll 1-3 mods / corruption enchant / +1 socket (casters: quality +-). Item becomes corrupted.',
-  poe2_vaal_infuser: 'Adds quality beyond the 20% cap (max 30%). Assumed 25% chance to corrupt.',
+  poe2_vaal_infuser: 'Needs 20%+ quality. Each use adds 1-2% quality (up to 10% beyond the cap) or corrupts the item instead: 0% chance at 20% quality, +5% per point above (5% at 21% ... 45% at 29%). On rings and amulets it uses the catalyst quality. Community-tested numbers.',
   hinekora_lock: 'Preview the exact result of the next currency used. Any other change removes it.',
   blacksmith_whetstone: QUALITY_HINT, arcanist_etcher: QUALITY_HINT, armourer_scrap: QUALITY_HINT, glassblower_bauble: QUALITY_HINT,
 };
@@ -72,6 +74,13 @@ function methodIcon(m) {
   if (m.handler === 'hinekora_lock') return 'assets/items/Currency/HinekorasLock.webp'; // no item row in the data
   return id != null ? iconPath(id) : null;
 }
+/** Omen art, found by the omen's name (the engine's OMENS list has no item ids). */
+let omenIds;
+const omenIcon = o => {
+  omenIds ??= new Map([...DB.items.values()].filter(i => /\/Omens\//.test(i.image || '')).map(i => [DB.text(i.label), i.id]));
+  const src = iconPath(omenIds.get(o.name));
+  return src ? `<img class="cur-icon omen-icon" src="${src}" alt="" onerror="this.remove()">` : '';
+};
 const iconTag = m => { const src = methodIcon(m); return src ? `<img class="cur-icon" src="${src}" alt="" onerror="this.remove()">` : ''; };
 
 const minLvlOf = m => (m.properties || []).find(p => p.key === 'min_mod_level')?.value || 0;
@@ -98,7 +107,7 @@ function selectBase(base) {
 function itemHasWork() {
   const it = S.item;
   return !!it && (S.history.length > 0 || it.rarity !== 'normal' || it.mods.length > 0 || it.unrevealed.length > 0
-    || it.socketed.length > 0 || it.quality > 0 || it.catalyst || it.corrupted);
+    || it.socketed.length > 0 || it.quality > 0 || it.catalyst || it.corrupted || it.sanctified);
 }
 
 /**
@@ -260,7 +269,7 @@ function renderPicker() {
   // Once a base is chosen the pickers are just a record of the choice (shown as the breadcrumb below), so they collapse
   // and the crafting area moves up. Click a breadcrumb to pick again.
   if (S.base) { $('#picker').innerHTML = ''; return; }
-  const cats = DB.categories.filter(c => !c.legacy);
+  const cats = DB.categories.filter(c => !c.legacy && !HIDDEN_GROUPS.has(c.id));
   let h = '<h2>Choose an item group</h2><div class="chips">';
   for (const c of cats) h += `<button class="chip ${S.group === c.id ? 'active' : ''}" data-group="${c.id}">${esc(DB.text(c.label))}</button>`;
   h += '</div>';
@@ -314,10 +323,19 @@ function relevantOmens() {
   return OMENS.filter(o => !o.retired && o.for === base);
 }
 
+// An omen only belongs to the currency it works with: switching to another currency (or tab) disarms the ones that no longer
+// apply. A pinned omen is kept (it is a deliberate combo) but stays out of sight until its currency is selected again.
+function pruneOmens() {
+  const relevant = new Set(relevantOmens().map(o => o.id));
+  for (const id of [...ctx.omens]) if (!relevant.has(id) && !ctx.pinned.has(id)) ctx.omens.delete(id);
+}
+
 // Always-visible list of armed omens (pinned ones marked), so a combo you set up stays obvious and easy to switch off.
 function renderArmedBar() {
-  if (!ctx.omens.size) return '';
-  const chips = [...ctx.omens].map(id => {
+  const relevant = new Set(relevantOmens().map(o => o.id));
+  const armed = [...ctx.omens].filter(id => relevant.has(id));
+  if (!armed.length) return '';
+  const chips = armed.map(id => {
     const o = OMENS.find(x => x.id === id);
     if (!o) return '';
     const pinned = ctx.pinned.has(id);
@@ -338,7 +356,7 @@ function renderOmens() {
       const off = o.todo || (['Ulaman', 'Kurgal', 'Amanamu'].includes(o.id) && faction(S.item));
       const why = o.todo ? o.hint : off ? 'Weapon / Jewellery only.' : o.hint;
       const pinned = ctx.pinned.has(o.id);
-      return `<span class="omen-wrap ${pinned ? 'pinned' : ''}"><button class="chip ${ctx.omens.has(o.id) ? 'active' : ''} ${off ? 'off' : ''}" ${off ? 'disabled' : ''} data-omen="${o.id}" title="${esc(why)}">${esc(o.name.replace('Omen of ', ''))}${o.for === 'reveal' ? '<small>at reveal</small>' : ''}</button><button class="pin ${pinned ? 'on' : ''}" ${off ? 'disabled' : ''} data-pin="${o.id}" title="${pinned ? 'Pinned: stays armed after every use. Click to unpin.' : 'Pin: keep this omen armed after each use, to repeat a combo'}">&#128204;</button></span>`;
+      return `<span class="omen-wrap ${pinned ? 'pinned' : ''}"><button class="chip ${ctx.omens.has(o.id) ? 'active' : ''} ${off ? 'off' : ''}" ${off ? 'disabled' : ''} data-omen="${o.id}" title="${esc(why)}">${omenIcon(o)}${esc(o.name.replace('Omen of ', ''))}${o.for === 'reveal' ? '<small>at reveal</small>' : ''}</button><button class="pin ${pinned ? 'on' : ''}" ${off ? 'disabled' : ''} data-pin="${o.id}" title="${pinned ? 'Pinned: stays armed after every use. Click to unpin.' : 'Pin: keep this omen armed after each use, to repeat a combo'}">&#128204;</button></span>`;
     }).join('') + '</div>';
 }
 
@@ -440,6 +458,7 @@ function currencyButtons(it, methods) {
 
 function renderCurrencies() {
   const it = S.item;
+  pruneOmens();
   let h = '<h2>Choose a crafting method</h2><div class="chips tabs">';
   const tabs = TABS.filter(t => t !== 'Catalysts' || hasCatalystTab(it));
   if (!tabs.includes(S.tab)) S.tab = 'Currencies';
@@ -521,7 +540,7 @@ function renderReveal() {
   const chance = id => entries.find(e => e.mod.id === id)?.chance || 0;
   const opts = r.options.map((e, i) => `<button class="reveal-opt ${e.lich ? 'lich' : ''}" data-pick="${i}">
       <span class="txt">${modLines(e.mod).map(esc).join('<br>')}</span>
-      <span class="meta">${e.lich ? `<b class="desec">${e.faction}</b>` : 'normal'} · ilvl ${e.mod.minlvl} · ${(chance(e.mod.id) * 100).toFixed(1)}% per draw</span></button>`).join('');
+      <span class="meta">${e.lich ? `<b class="desec">${e.faction}</b>` : 'normal'}${e.tier ? ' · tier ' + e.tier : ''} · ilvl ${e.mod.minlvl} · ${(chance(e.mod.id) * 100).toFixed(1)}% per draw</span></button>`).join('');
   const reroll = ctx.omens.has('echoes') && !r.rerolled ? '<button class="mini" id="revealReroll">Reroll (Abyssal Echoes)</button>' : '';
   return `<div class="reveal"><b>Well of Souls — desecrated ${u.affix}</b>
     ${opts || '<div class="calc-note">No modifier can be revealed here (item level / bone / omen too restrictive).</div>'}
@@ -621,7 +640,7 @@ function renderTooltip() {
         ${implicit ? '<div class="sep"></div>' + implicit : ''}
         ${mods ? '<div class="sep"></div>' + mods : ''}
         ${augments ? '<div class="sep"></div>' + augments : ''}
-        ${it.corrupted ? '<div class="corrupted">Corrupted</div>' : ''}
+        ${it.corrupted ? '<div class="corrupted">Corrupted</div>' : ''}${it.sanctified ? '<div class="sanctified">Sanctified</div>' : ''}
       </div>
     </div>${renderTargets()}${renderReveal()}${renderForesee()}`;
 }
