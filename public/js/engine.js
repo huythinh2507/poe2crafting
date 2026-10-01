@@ -222,6 +222,13 @@ const addRandom = (item, opts) => {
 const removable = item => item.mods.filter(m => !m.fractured);
 
 /**
+ * Mods a Fracturing Orb can lock: desecrated mods cannot be fractured (unrevealed ones still count
+ * toward the 4-mod minimum), and an already-fractured mod is not a candidate. So 3 normal mods + 1
+ * desecrated gives each normal mod a 1-in-3 chance instead of 1-in-4.
+ */
+export const fractureCandidates = item => item.mods.filter(m => !m.fractured && !m.desecrated);
+
+/**
  * Everything a removal could hit, after omen filters.
  * opts: kind ('prefix'|'suffix'), desecrated (Omen of Light), whittle (Omen of Whittling).
  * Whittling keeps only the candidates with the lowest mod LEVEL (required level, not tier).
@@ -297,7 +304,7 @@ const CONSTRAINTS = {
   not_strongbox: i => groupOf(i) !== 15,
   open_affix: i => { const o = openSlots(i); return o.prefix > 0 || o.suffix > 0; },
   minimum_1_explicit: i => explicitCount(i) >= 1,
-  minimum_4_explicits: i => i.mods.length >= 4,
+  minimum_4_explicits: i => explicitCount(i) >= 4, // an unrevealed desecrated slot counts too
   weapon_quality_base: isMartial,
   caster_quality_base: isCaster,
   armour_quality_base: isArmour,
@@ -475,14 +482,38 @@ export function metaEffects(text) {
   return out;
 }
 
+/**
+ * Sockets an augment could go into. Filled sockets are replaceable (the old augment is destroyed)
+ * unless the augment is socket-bound; limits (one Ancient, one Aldur's Legacy, ...) are counted as
+ * if the replaced augment were already gone. Only the first empty socket counts as "empty".
+ */
+export function socketSlots(item, e) {
+  if (!socketEffect(item, e)) return [];
+  const out = [];
+  for (let i = 0; i < item.sockets; i++) {
+    if (i > item.socketed.length) break;
+    if (item.socketed[i]?.bound) continue;
+    const rest = { ...item, socketed: item.socketed.filter((_, k) => k !== i) };
+    if (socketAllowed(rest, e)) out.push(i);
+  }
+  return out;
+}
+
 function socket(item, _o, method) {
   const e = method.socket;
   const lines = socketEffect(item, e);
-  if (!lines || item.socketed.length >= item.sockets || !socketAllowed(item, e)) return null;
+  const slots = socketSlots(item, e);
+  if (!lines || !slots.length) return null;
+  // UI passes the clicked socket as method.slot; otherwise use the first empty socket (else the first replaceable)
+  let slot = method.slot;
+  // replacing destroys an augment, so it only happens when a filled socket is clicked explicitly
+  if (slot == null) slot = item.socketed.length < item.sockets ? item.socketed.length : -1;
+  if (!slots.includes(slot)) return null;
   const name = DB.text(DB.items.get(e.item)?.label);
-  const rec = { item: e.item, limit: e.limit, name, lines, ...metaEffects(lines.join(' ')) };
-  item.socketed.push(rec);
-  const out = note(`Socketed ${name}: ${lines.join(' / ')}`);
+  const rec = { item: e.item, limit: e.limit, name, lines, bound: !!e.bound, ...metaEffects(lines.join(' ')) };
+  const replaced = item.socketed[slot];
+  if (replaced) item.socketed[slot] = rec; else item.socketed.push(rec);
+  const out = note(`Socketed ${name}: ${lines.join(' / ')}${replaced ? ` (destroyed ${replaced.name})` : ''}`);
   if (rec.transform) {
     // retroactively transform resistances already on the item
     item.mods = item.mods.map(m => {
@@ -606,7 +637,9 @@ const HANDLERS = {
     return out;
   },
   poe2_fracture: i => {
-    const m = pick(removable(i));
+    const cands = fractureCandidates(i);
+    if (!cands.length) return null;
+    const m = pick(cands);
     m.fractured = true;
     return [{ op: 'fracture', mod: m }];
   },

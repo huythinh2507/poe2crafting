@@ -1,5 +1,5 @@
 import { DB, loadData, classesOfGroup, basesOfClass, classPool, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketAllowed, essenceApplicable, checkConstraints, handlerImplemented, modLines, modTemplate, openSlots, maxAffix, bonus, fullPool, rollMod,
+import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, openSlots, maxAffix, bonus, fullPool, rollMod,
   ctx, OMENS, toggleOmen, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 const $ = s => document.querySelector(s);
@@ -62,7 +62,9 @@ const iconPath = id => {
 };
 /** Base item art (weapons so far), sized by the base's inventory footprint. */
 const baseArt = (b, cls = 'base-art') => {
-  const src = b.image ? 'assets/items/' + b.image.replace(/^Art\/2DItems\//, '') + '.webp' : null;
+  // only weapon bases (groups 7 / 8) have art downloaded so far; skip the rest to avoid 404s
+  const hasArt = [7, 8].includes(DB.classes.get(b.class)?.group);
+  const src = b.image && hasArt ? 'assets/items/' + b.image.replace(/^Art\/2DItems\//, '') + '.webp' : null;
   return src ? `<img class="${cls}" src="${src}" alt="" onerror="this.remove()">` : '';
 };
 function methodIcon(m) {
@@ -87,14 +89,18 @@ const url = () => {
 function selectBase(base) {
   S.base = base;
   S.item = newItem(base, S.ilvl);
-  S.history = []; S.log = []; S.method = null; S.foresee = {};
+  S.history = []; S.log = []; S.method = null; S.foresee = {}; S.reveal = null;
+  ctx.omens.clear(); // omens belong to the item being crafted
   url(); renderAll();
 }
 
+// Back to a clean slate: fresh item, nothing held, no omens armed.
 function reset() {
   if (!S.base) return;
   S.item = newItem(S.base, S.ilvl);
   S.history = []; S.log = []; S.foresee = {}; S.reveal = null;
+  S.method = null; S.openCurrency = null;
+  ctx.omens.clear();
   renderCraft();
 }
 
@@ -114,6 +120,12 @@ function getForesee(method) {
 }
 
 function failApply(method) {
+  if (method.handler === 'poe2_socketable') {
+    const full = S.item.socketed.length >= S.item.sockets;
+    S.log.unshift({ name: methodName(method), changes: [{ op: 'note', text: full ? 'All sockets are full: click a socket on the item to replace its augment (socket-bound ones cannot be replaced)' : 'Cannot be socketed here (limit reached or no effect on this item)' }] });
+    renderCraft();
+    return;
+  }
   const active = [...ctx.omens].length ? ' (check the active omens)' : '';
   S.log.unshift({ name: methodName(method), changes: [{ op: 'note', text: 'Cannot be applied: no valid target on this item' + active }] });
   renderCraft();
@@ -268,6 +280,11 @@ function removalTargets() {
   const m = S.method;
   if (!m || !S.item) return null;
   const h = handlerBase(m.handler);
+  if (h === 'poe2_fracture') {
+    if (S.item.mods.some(x => x.fractured)) return null; // only one fracture per item
+    const cands = fractureCandidates(S.item).map(x => ({ m: x, level: DB.mods.get(x.id).minlvl, affix: affixOf(DB.mods.get(x.id)) }));
+    return cands.length ? { cands, count: 1, fracture: true } : null;
+  }
   const replacing = h === 'poe2_essence' && essenceReplaces(m.essence);
   if (!['poe2_chaos', 'poe2_annulment'].includes(h) && !replacing) return null;
   const { count, ...opts } = removalOpts(h, replacing);
@@ -297,7 +314,7 @@ const SOCKET_CATS = ['Special runes', 'Runes', 'Soul cores', 'Idols', 'Abyssal e
 function socketMethods(it) {
   return DB.raw.socketables.entries.map((e, i) => {
     const name = DB.text(DB.items.get(e.item)?.label);
-    return { id: 'sock' + i, handler: 'poe2_socketable', socket: e, name, group: 'Socketables', cat: socketCat(e), constraints: ['socketable_base', 'has_empty_socket'] };
+    return { id: 'sock' + i, handler: 'poe2_socketable', socket: e, name, group: 'Socketables', cat: socketCat(e), constraints: ['socketable_base'] };
   }).filter(m => m.name && !m.name.startsWith('[DNT') && socketEffect(it, m.socket));
 }
 
@@ -306,7 +323,7 @@ const findMethod = id => allMethods().find(m => String(m.id) === String(id));
 
 const usable = (it, m) => checkConstraints(it, m.constraints, m.handler)
   && (m.handler !== 'poe2_essence' || essenceApplicable(it, m.essence))
-  && (m.handler !== 'poe2_socketable' || socketAllowed(it, m.socket));
+  && (m.handler !== 'poe2_socketable' || socketSlots(it, m.socket).length > 0);
 
 function methodButton(it, m) {
   const impl = handlerImplemented(m.handler);
@@ -374,7 +391,7 @@ function renderCurrencies() {
   } else if (S.tab === 'Socketables') {
     h += '<div class="chips sub">' + SOCKET_CATS.map(c => `<button class="chip ${S.sub.Socketables === c ? 'active' : ''}" data-sub="${c}">${c}</button>`).join('') + '</div>';
     h += `<div class="row"><input id="socketSearch" class="input" placeholder="Search socketables" value="${esc(S.socketSearch)}"></div><div class="currencies" id="socketList"></div>`;
-    h += `<p class="calc-note">Sockets: ${it.socketed.length}/${it.sockets}. Bases with no sockets cannot take augments.</p>`;
+    h += `<p class="calc-note">Sockets: ${it.socketed.length}/${it.sockets}. Click a socket on the item to place the selected augment there; a filled socket is replaced (the old augment is destroyed) unless it is socket-bound (marked with a lock).</p>`;
   }
   h += renderOmens();
   $('#currencies').innerHTML = h;
@@ -402,7 +419,14 @@ function itemName(it) {
 
 function renderTargets() {
   if (!TARGETS) return '';
-  const { cands, count } = TARGETS;
+  const { cands, count, fracture } = TARGETS;
+  if (fracture) {
+    const pct = (100 / cands.length).toFixed(cands.length % 3 === 0 ? 1 : 0);
+    const skipped = (S.item.mods.filter(m => m.desecrated && !m.fractured).length) + S.item.unrevealed.length;
+    return `<div class="targets"><b>${esc(methodName(S.method))} will lock one of ${cands.length}:</b> <span class="calc-note">${pct}% each</span>
+      ${cands.map(c => `<div>${esc(modLines(DB.mods.get(c.m.id), c.m.rolls).join(' / '))}</div>`).join('')}
+      ${skipped ? `<div class="calc-note">${skipped} desecrated mod${skipped > 1 ? 's' : ''} cannot be fractured but ${skipped > 1 ? 'still count' : 'still counts'} toward the 4-mod minimum.</div>` : ''}</div>`;
+  }
   const line = c => {
     const text = c.m ? modLines(DB.mods.get(c.m.id), c.m.rolls).join(' / ') : `Unrevealed desecrated ${c.u.affix}`;
     return `<div>${esc(text)} <span class="calc-note">· mod lvl ${c.level}${c.u ? ' (counts as 1)' : ''}</span></div>`;
@@ -455,7 +479,16 @@ function renderTooltip() {
   const implicit = it.implicits.map(m => `<div class="implicit">${modLines(DB.mods.get(m.id), m.rolls).map(esc).join('<br>')}</div>`).join('')
     + it.corruption.map(m => `<div class="corrupt-mod">${modLines(DB.mods.get(m.id), m.rolls).map(esc).join('<br>')}</div>`).join('');
   if (it.quality) props.unshift(`<div class="prop">Quality: <b class="q">+${it.quality}%</b></div>`);
-  if (it.sockets) props.push(`<div class="prop">Sockets: <b>${it.socketed.map(() => '●').concat(Array(it.sockets - it.socketed.length).fill('○')).join(' ')}</b></div>`);
+  // sockets drawn as rings; filled ones show the socketed rune / soul core art
+  const socketRow = it.sockets ? `<div class="sockets">${Array.from({ length: it.sockets }, (_, i) => {
+    const s = it.socketed[i];
+    const targetable = S.method?.handler === 'poe2_socketable' && socketSlots(it, S.method.socket).includes(i);
+    const cls = `socket ${s ? 'filled' : ''} ${s?.bound ? 'bound' : ''} ${targetable ? 'target' : ''}`;
+    if (!s) return `<span class="${cls}" data-socket="${i}" title="Empty socket"></span>`;
+    const art = s.item != null ? iconPath(s.item) : null;
+    const tip = s.name + ': ' + s.lines.join(' / ') + (s.bound ? '\nSocket-bound: cannot be removed or replaced' : '');
+    return `<span class="${cls}" data-socket="${i}" title="${esc(tip)}">${art ? `<img src="${art}" alt="" onerror="this.remove()">` : ''}${s.bound ? '<i class="lock">\u{1F512}</i>' : ''}</span>`;
+  }).join('')}</div>` : '';
   const augments = it.socketed.map(x => `<div class="augment">${esc(x.name)}: ${x.lines.map(esc).join(' / ')}</div>`).join('');
   const prefixes = it.mods.map((m, i) => [m, i]).filter(([m]) => affixOf(DB.mods.get(m.id)) === 'prefix');
   const suffixes = it.mods.map((m, i) => [m, i]).filter(([m]) => affixOf(DB.mods.get(m.id)) === 'suffix');
@@ -466,6 +499,7 @@ function renderTooltip() {
       <div class="item-head">${esc(name)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>
       <div class="item-body">
         ${baseArt(b, 'item-art')}
+        ${socketRow}
         <div class="kind">${esc(DB.text(S.cls.label))}</div>
         ${props.join('')}
         <div class="sep"></div>
@@ -593,7 +627,7 @@ function renderAll() { renderPicker(); renderSelected(); renderCraft(); }
 // ---------- events ----------
 document.addEventListener('click', e => {
   if (S.openCurrency && !e.target.closest('.cur-wrap')) { S.openCurrency = null; renderCurrencies(); }
-  const t = e.target.closest('[data-group],[data-class],[data-base],[data-method],[data-family],[data-tab],[data-sub],[data-omen],[data-reveal],[data-pick],[data-fam],[data-add],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#toggleDesec,#itemBox');
+  const t = e.target.closest('[data-group],[data-class],[data-base],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-omen],[data-reveal],[data-pick],[data-fam],[data-add],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#toggleDesec,#itemBox');
   if (!t) return;
   if (t.dataset.group) {
     S.group = +t.dataset.group; S.cls = null; S.base = null; S.item = null; url(); renderAll();
@@ -601,6 +635,11 @@ document.addEventListener('click', e => {
     S.cls = DB.classes.get(+t.dataset.class); S.base = null; S.item = null; S.baseSearch = ''; url(); renderAll();
   } else if (t.dataset.base) {
     selectBase(DB.items.get(+t.dataset.base));
+  } else if (t.dataset.socket != null) {
+    // clicking a socket places the held augment there; no-op for any other currency
+    if (S.method?.handler === 'poe2_socketable') {
+      if (!apply({ ...S.method, slot: +t.dataset.socket })) { /* failApply already logged */ }
+    } else if (S.method) apply(S.method);
   } else if (t.dataset.family) {
     S.openCurrency = S.openCurrency === t.dataset.family ? null : t.dataset.family;
     renderCurrencies();

@@ -193,3 +193,18 @@ h2 { margin: 22px 0 10px; font: bold 17px "Montserrat", system-ui, sans-serif; c
 .chip-base { display: inline-flex; align-items: center; gap: 8px; }
 .chip-art { height: 34px; width: auto; max-width: 48px; object-fit: contain; }
 .item-art { display: block; margin: 4px auto 6px; max-height: 190px; max-width: 70%; object-fit: contain; filter: drop-shadow(0 4px 8px #000); }
+
+/* sockets */
+.sockets { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 2px 0 8px; }
+.socket { width: 38px; height: 38px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; overflow: hidden;
+  background: radial-gradient(circle at 35% 30%, #2a2420, #070605 70%); border: 2px solid #5c4a35;
+  box-shadow: inset 0 0 8px #000, 0 0 0 1px #000; }
+.socket.filled { border-color: var(--gold); box-shadow: inset 0 0 6px #000, 0 0 10px #c8a46a66; }
+.socket img { width: 100%; height: 100%; object-fit: contain; transform: scale(1.1); filter: drop-shadow(0 1px 2px #000); }
+
+.socket { position: relative; }
+.socket.target { cursor: pointer; border-color: #7fe3a0; box-shadow: inset 0 0 6px #000, 0 0 12px #7fe3a0aa; }
+.socket.bound { border-color: #b8584a; }
+.socket .lock { position: absolute; right: -2px; bottom: -2px; font-size: 13px; font-style: normal; line-height: 1; filter: drop-shadow(0 1px 2px #000); }
+.socket { overflow: visible; }
+.socket img { border-radius: 50%; }
