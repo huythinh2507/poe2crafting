@@ -62,6 +62,8 @@ public sealed partial class CraftingEngine
         ["armour_quality_base"] = IsArmour,
         ["flask_base"] = i => GroupOf(i) == 9,
         ["ring_or_amulet_base"] = i => i.ClassId is 33 or 34,
+        ["catalyst_base"] = i => !i.Corrupted && i.ClassId is 33 or 34 or 105,   // rings, amulets, Grasping Mail
+        ["refined_catalyst_base"] = i => !i.Corrupted && GroupOf(i) == 10,       // jewels
         ["not_maximum_quality"] = i => i.Quality < MaxQuality,
         ["socketable_base"] = CanSocket,
         ["not_maximum_sockets"] = i => i.Sockets < (Db.Items[i.BaseId].Sockets ?? 0),

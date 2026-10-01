@@ -1,5 +1,5 @@
 import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
+import { CATALYSTS, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
   ctx, OMENS, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 const $ = s => document.querySelector(s);
@@ -28,14 +28,14 @@ function methodCatalogue() {
     for (const e of els || []) {
       const constraints = [...inherited, ...(e.constraints || [])];
       // siblings that are handlers of the same currency form a family (basic, Greater, Perfect)
-      const family = e.handler && parent && parent.elements.filter(x => x.handler).length > 1 ? 'fam' + parent.id : null;
+      const family = group !== 'Catalysts' && e.handler && parent && parent.elements.filter(x => x.handler).length > 1 ? 'fam' + parent.id : null;
       if (e.handler) out.push({ ...e, group, constraints, family });
       walk(e.elements, group, constraints, e);
     }
   };
   for (const m of DB.raw.methods.crafting) {
-    if (!['Currencies', 'Desecrate'].includes(m.label)) continue; // the Generate tab (spawn a Normal/Magic/Rare item) was removed from the UI
-    walk(m.elements, m.label, m.constraints || [], null);
+    if (!['Currencies', 'Desecrate', 'Catalysts', 'Refined Catalysts'].includes(m.label)) continue; // the Generate tab (spawn a Normal/Magic/Rare item) was removed from the UI
+    walk(m.elements, m.label.endsWith('Catalysts') ? 'Catalysts' : m.label, m.constraints || [], null);
   }
   // The tablet-only Vaal Orb duplicates the normal one on equipment.
   const list = out.filter(m => !m.constraints.includes('tablet_base'));
@@ -98,7 +98,7 @@ function selectBase(base) {
 function itemHasWork() {
   const it = S.item;
   return !!it && (S.history.length > 0 || it.rarity !== 'normal' || it.mods.length > 0 || it.unrevealed.length > 0
-    || it.socketed.length > 0 || it.quality > 0 || it.corrupted);
+    || it.socketed.length > 0 || it.quality > 0 || it.catalyst || it.corrupted);
 }
 
 /**
@@ -359,7 +359,8 @@ function removalTargets() {
   return { cands: removalPool(S.item, opts), count: count || 1, opts };
 }
 
-const TABS = ['Currencies', 'Essences', 'Desecrate', 'Socketables'];
+const TABS = ['Currencies', 'Essences', 'Desecrate', 'Socketables', 'Catalysts'];
+const hasCatalystTab = it => !!it && (checkConstraints({ ...it, corrupted: false }, ['catalyst_base']) || checkConstraints({ ...it, corrupted: false }, ['refined_catalyst_base']));
 
 function essenceMethods(it) {
   const E = DB.raw.essences;
@@ -395,6 +396,8 @@ const usable = (it, m) => checkConstraints(it, m.constraints, m.handler)
 function methodButton(it, m) {
   const impl = handlerImplemented(m.handler);
   let hint = HINTS[m.handler] || '';
+  const cat = /^poe2_(?:refined_)?catalyst_(\w+)$/.exec(m.handler);
+  if (cat) hint = `Adds ${CATALYSTS[cat[1]]} quality: scales ${CATALYSTS[cat[1]]}-tagged modifiers. Gain per use falls with item level (item level 100: 1%, sometimes 2%). Max 20%. A different catalyst replaces the quality.`;
   let extra = minLvlOf(m) ? `<small class="lvl">Min mod lvl ${minLvlOf(m)}</small>` : '';
   const maxIlvl = (m.properties || []).find(p => p.key === 'max_item_level')?.value;
   if (maxIlvl) extra = `<small class="lvl">Item level ≤ ${maxIlvl}</small>`;
@@ -438,9 +441,14 @@ function currencyButtons(it, methods) {
 function renderCurrencies() {
   const it = S.item;
   let h = '<h2>Choose a crafting method</h2><div class="chips tabs">';
-  for (const t of TABS) h += `<button class="chip ${S.tab === t ? 'active' : ''}" data-tab="${t}">${t}</button>`;
+  const tabs = TABS.filter(t => t !== 'Catalysts' || hasCatalystTab(it));
+  if (!tabs.includes(S.tab)) S.tab = 'Currencies';
+  for (const t of tabs) h += `<button class="chip ${S.tab === t ? 'active' : ''}" data-tab="${t}">${t}</button>`;
   h += '</div>';
-  if (S.tab === 'Currencies') {
+  if (S.tab === 'Catalysts') {
+    h += '<div class="currencies">' + CATALOGUE.filter(m => m.group === 'Catalysts' && (!m.constraints.includes('refined_catalyst_base') || checkConstraints({ ...it, corrupted: false }, ['refined_catalyst_base']))).map(m => methodButton(it, m)).join('') + '</div>';
+    h += `<p class="calc-note">${it.catalyst?.quality ? `Current: <b>${esc(it.catalyst.tag)}</b> quality +${it.catalyst.quality}% (max ${catalystCap(it)}%).` : 'No catalyst quality yet.'} Quality scales every modifier with the catalyst's tag. A different catalyst replaces it. Use <b>Omen of Catalysing Exaltation</b> (Currencies, Exalted Orb) to turn the quality into a higher chance of that tag.</p>`;
+  } else if (S.tab === 'Currencies') {
     h += '<div class="currencies">' + currencyButtons(it, CATALOGUE.filter(m => m.group === S.tab)) + '</div>';
   } else if (S.tab === 'Desecrate') {
     h += '<div class="currencies">' + CATALOGUE.filter(m => m.group === 'Desecrate').map(m => methodButton(it, m)).join('') + '</div>';
@@ -471,7 +479,7 @@ const modHtml = (m, idx) => {
   const e = poolEntry(S.item.classId, m.id);
   const kind = affixOf(mod) || '';
   const faction = factionOf(mod);
-  return `<div class="mod ${kind} ${m.fractured ? 'fractured' : ''} ${m.desecrated ? 'desecrated' : ''} ${m.crafted ? 'is-crafted' : ''} ${TARGETS?.cands.some(c => c.m === m) ? 'target' : ''}" data-remove="${idx}">${modLines(mod, m.rolls).map(esc).join('<br>')}
+  return `<div class="mod ${kind} ${m.fractured ? 'fractured' : ''} ${m.desecrated ? 'desecrated' : ''} ${m.crafted ? 'is-crafted' : ''} ${TARGETS?.cands.some(c => c.m === m) ? 'target' : ''}" data-remove="${idx}">${modLines(mod, m.rolls, S.item).map(esc).join('<br>')}
     <span class="meta"><b>${kind}</b> “${esc(DB.text(mod.label))}” · ${e ? 'tier ' + e.tier : 'special'} · mod lvl ${mod.minlvl}${m.crafted ? ' · <b class="crafted">crafted</b>' : ''}${m.desecrated ? ` · <b class="desec">desecrated${faction ? ' · ' + faction : ''}</b>` : ''}${m.fractured ? ' · <b class="frac">fractured</b>' : ''}</span></div>`;
 };
 
@@ -579,9 +587,10 @@ function renderTooltip() {
   if (R.strength) reqs.push(`Str ${R.strength}`);
   if (R.dexterity) reqs.push(`Dex ${R.dexterity}`);
   if (R.intelligence) reqs.push(`Int ${R.intelligence}`);
-  const implicit = it.implicits.map(m => `<div class="implicit">${modLines(DB.mods.get(m.id), m.rolls).map(esc).join('<br>')}</div>`).join('')
+  const implicit = it.implicits.map(m => `<div class="implicit">${modLines(DB.mods.get(m.id), m.rolls, it).map(esc).join('<br>')}</div>`).join('')
     + it.corruption.map(m => `<div class="corrupt-mod">${modLines(DB.mods.get(m.id), m.rolls).map(esc).join('<br>')}</div>`).join('');
   if (it.quality) props.unshift(`<div class="prop">Quality: <b class="q">+${it.quality}%</b></div>`);
+  if (it.catalyst?.quality) props.unshift(`<div class="prop">Quality (${esc(it.catalyst.tag[0].toUpperCase() + it.catalyst.tag.slice(1))} Modifiers): <b class="q">+${it.catalyst.quality}%</b></div>`);
   // sockets drawn as rings; filled ones show the socketed rune / soul core art
   const socketRow = it.sockets ? `<div class="sockets">${Array.from({ length: it.sockets }, (_, i) => {
     const s = it.socketed[i];

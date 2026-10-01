@@ -6,7 +6,7 @@ namespace Poe2Crafting.Engine.Crafting;
 /// <param name="MinLevel">Minimum Modifier Level of the currency (0 = none).</param>
 /// <param name="Affix">Only add a prefix / only a suffix (Sinistral / Dextral omens).</param>
 /// <param name="Homogenising">Only add a mod that shares a tag with one already on the item.</param>
-public readonly record struct AddOptions(int MinLevel = 0, Affix? Affix = null, bool Homogenising = false);
+public readonly record struct AddOptions(int MinLevel = 0, Affix? Affix = null, bool Homogenising = false, IReadOnlyDictionary<int, double>? Positives = null);
 
 /// <summary>Free prefix and suffix slots.</summary>
 public readonly record struct OpenSlots(int Prefix, int Suffix)
@@ -126,11 +126,20 @@ public sealed partial class CraftingEngine
             var haveTags = item.Mods.SelectMany(m => Pools.GroupTags(ModOf(m))).ToHashSet();
             rollable = rollable.Where(e => Pools.GroupTags(e.Mod).Any(haveTags.Contains)).ToList();
         }
+        if (options.Positives is { } positives)
+        {
+            // weight multipliers for mods carrying a tag (Omen of Catalysing Exaltation)
+            rollable = rollable.Select(e =>
+            {
+                var factor = Pools.GroupTags(e.Mod).Sum(t => positives.GetValueOrDefault(t));
+                return factor > 0 ? e.WithWeight(e.Weight * factor, e.IsLich) : e;
+            }).ToList();
+        }
         return ApplyMinLevel(rollable, options.MinLevel);
     }
 
     /// <summary>Add-mod options for a currency, taking the armed omens into account.</summary>
-    private AddOptions AddOptionsFor(AddOptions baseOptions, string handler)
+    private AddOptions AddOptionsFor(AddOptions baseOptions, string handler, CraftItem? item = null)
     {
         var o = Context;
         return handler switch
@@ -139,6 +148,7 @@ public sealed partial class CraftingEngine
             {
                 Affix = o.Has("exalt_prefix") ? Affix.Prefix : o.Has("exalt_suffix") ? Affix.Suffix : baseOptions.Affix,
                 Homogenising = o.Has("exalt_homog"),
+                Positives = o.Has("exalt_catalyst") && item?.Catalyst is { Quality: > 0 } c ? CatalystWeights(c) : null,
             },
             "poe2_regal" => baseOptions with
             {

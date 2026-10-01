@@ -131,7 +131,7 @@ public sealed partial class CraftingEngine
         if (!_handlers.TryGetValue(handler, out var run)) return null;
 
         // Currencies that add a mod fail up front when nothing could be added.
-        if (AddsMod(handler) && EligibleMods(ProbeRarity(item, handler), AddOptionsFor(new AddOptions(method.MinModLevel), handler)).Count == 0)
+        if (AddsMod(handler) && EligibleMods(ProbeRarity(item, handler), AddOptionsFor(new AddOptions(method.MinModLevel), handler, item)).Count == 0)
             return null;
 
         var snapshot = item.Clone();
@@ -167,7 +167,7 @@ public sealed partial class CraftingEngine
     {
         var handler = BaseHandler(method.Handler);
         if (handler is "poe2_essence" or "poe2_socketable") return new AddChanceTable(0, new Dictionary<int, double>());
-        var pool = EligibleMods(ProbeRarity(item, handler), AddOptionsFor(new AddOptions(method.MinModLevel), handler));
+        var pool = EligibleMods(ProbeRarity(item, handler), AddOptionsFor(new AddOptions(method.MinModLevel), handler, item));
         var total = pool.Sum(e => e.Weight);
         return new AddChanceTable(total, pool.ToDictionary(e => e.Mod.Id, e => e.Weight / total));
     }

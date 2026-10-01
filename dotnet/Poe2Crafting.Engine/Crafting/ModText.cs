@@ -10,15 +10,16 @@ public sealed partial class CraftingEngine
     /// Display text for a mod, one line per stat (or one line for "adds # to #" damage mods). With rolls it
     /// shows the value and its range: "+178(175-189) to maximum Life". Without rolls it shows the range only.
     /// </summary>
-    public string[] ModLines(Data.Mod mod, double[]? rolls = null)
+    public string[] ModLines(Data.Mod mod, double[]? rolls = null, CraftItem? item = null)
     {
         var labels = mod.Stats.Select(s => Db.Text(s.Label)).ToList();
 
         string Format(int i)
         {
-            var (a, b) = (mod.Stats[i].Range[0], mod.Stats[i].Range[1]);
+            // catalyst quality scales the value and its range when the mod carries the catalyst's tag
+            var (a, b) = (CatalystScaled(item, mod, mod.Stats[i].Range[0]), CatalystScaled(item, mod, mod.Stats[i].Range[1]));
             if (rolls is null || i >= rolls.Length) return FormatRange(a, b);
-            var v = rolls[i];
+            var v = CatalystScaled(item, mod, rolls[i]);
             return a == b ? FormatNumber(v) : $"{FormatNumber(v)}({FormatNumber(a)}-{FormatNumber(b)})";
         }
 
@@ -35,5 +36,5 @@ public sealed partial class CraftingEngine
     }
 
     /// <summary>Convenience: the lines for a mod that is on an item.</summary>
-    public string[] ModLines(ModInstance instance) => ModLines(ModOf(instance), instance.Rolls);
+    public string[] ModLines(ModInstance instance, CraftItem? item = null) => ModLines(ModOf(instance), instance.Rolls, item);
 }

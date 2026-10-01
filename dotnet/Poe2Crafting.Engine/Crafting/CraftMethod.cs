@@ -54,7 +54,7 @@ public sealed class MethodCatalogue
         foreach (var top in db.Raw.Methods.Crafting.EnumerateArray())
         {
             var label = top.GetProperty("label").GetString();
-            if (label is not ("Currencies" or "Generate" or "Desecrate")) continue;
+            if (label is not ("Currencies" or "Generate" or "Desecrate" or "Catalysts" or "Refined Catalysts")) continue;
             var inherited = ReadConstraints(top);
             if (top.TryGetProperty("elements", out var elements) && elements.ValueKind == JsonValueKind.Array)
                 Walk(elements, inherited);
