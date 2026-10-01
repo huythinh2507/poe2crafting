@@ -82,6 +82,20 @@ public class CatalystTests
         Assert.Equal(30, e.CatalystScaled(Make(e, "Iron Ring"), mod, 30));   // no catalyst: untouched
     }
 
+    // Values round DOWN: a +3 needs 34% quality to become +4 (3 x 1.17 = 3.51 stays 3).
+    [Fact]
+    public void Scaled_values_round_down()
+    {
+        var e = T.Engine();
+        var life = T.Db.Raw.Tags.Entries.First(t => t.Key == "life").Id;
+        var mod = T.Db.Mods.Values.First(m => e.Pools.GroupTags(m).Contains(life) && m.Stats.Count == 1);
+        var ring = Make(e, "Iron Ring");
+        double At(int quality) { ring.Catalyst = new CatalystQuality("life", quality); return e.CatalystScaled(ring, mod, 3); }
+        Assert.Equal(3, At(17));
+        Assert.Equal(3, At(33));
+        Assert.Equal(4, At(34));
+    }
+
     [Fact]
     public void Omen_factor_is_x5_at_20_percent_and_x2_at_5_percent()
     {
