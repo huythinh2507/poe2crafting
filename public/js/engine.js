@@ -817,13 +817,18 @@ function desecrate(item, o) {
   return [...out, ...note(`Unrevealed desecrated ${affix} added — reveal it at the Well of Souls`)];
 }
 
-/** Weighted candidates for one unrevealed slot. Lich mods share ctx.settings.lichWeight. */
+/**
+ * Weighted candidates for one unrevealed slot. Lich mods share ctx.settings.lichWeight, which is meant against gear weights (about
+ * 1000 per tier). Jewel mods all weigh 1 ("all modifiers have equal weight"), so there the Lich weight is scaled down to the same
+ * scale; otherwise the three Lich suffixes would take over 99% of every jewel reveal.
+ */
 export function desecratedPool(item, u) {
   const used = new Set(item.mods.map(m => DB.mods.get(m.id).group));
   const ok = e => e.affix === u.affix && e.mod.minlvl <= item.ilvl && !used.has(e.mod.group);
-  const lich = applyMinLevel(lichPool(item.classId).filter(ok), u.minLevel)
-    .map(e => ({ ...e, weight: ctx.settings.lichWeight, lich: true }));
   const normal = ctx.settings.includeNormal ? applyMinLevel(fullPool(item).filter(ok), u.minLevel) : [];
+  const meanNormal = normal.length ? normal.reduce((sum, e) => sum + e.weight, 0) / normal.length : 1000;
+  const lichWeight = meanNormal < 100 ? ctx.settings.lichWeight * meanNormal / 1000 : ctx.settings.lichWeight;
+  const lich = applyMinLevel(lichPool(item.classId).filter(ok), u.minLevel).map(e => ({ ...e, weight: lichWeight, lich: true }));
   return [...lich, ...normal];
 }
 

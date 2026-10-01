@@ -563,7 +563,7 @@ function renderReveal() {
   const chance = id => entries.find(e => e.mod.id === id)?.chance || 0;
   const opts = r.options.map((e, i) => `<button class="reveal-opt ${e.lich ? 'lich' : ''}" data-pick="${i}">
       <span class="txt">${modLines(e.mod).map(esc).join('<br>')}</span>
-      <span class="meta">${e.lich ? `<b class="desec">${e.faction}</b>` : 'normal'}${e.tier ? ' · tier ' + e.tier : ''} · ilvl ${e.mod.minlvl} · ${(chance(e.mod.id) * 100).toFixed(1)}% per draw</span></button>`).join('');
+      <span class="meta">${e.lich ? `<b class="desec">${e.faction || 'desecrated'}</b>` : 'normal'}${e.tier ? ' · tier ' + e.tier : ''} · ilvl ${e.mod.minlvl} · ${(chance(e.mod.id) * 100).toFixed(1)}% per draw</span></button>`).join('');
   const reroll = ctx.omens.has('echoes') && !r.rerolled ? '<button class="mini" id="revealReroll">Reroll (Abyssal Echoes)</button>' : '';
   return `<div class="reveal"><b>Well of Souls — desecrated ${u.affix}</b>
     ${opts || '<div class="calc-note">No modifier can be revealed here (item level / bone / omen too restrictive).</div>'}
