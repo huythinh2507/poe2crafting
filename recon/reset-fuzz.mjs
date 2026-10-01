@@ -27,7 +27,7 @@ for (const [qs, label] of bases) {
       c.renderCraft();
     }, 1234 + run * 77 + bases.indexOf(bases.find(x => x[1] === label)) * 1000);
     const before = await p.evaluate(() => { const i = window.__craft.S.item; return `${i.rarity}/${i.mods.length}+${i.unrevealed.length} soc=${i.socketed.length} cor=${i.corrupted}`; });
-    for (const sel of ['#resetItem', '#reset']) {
+    for (const sel of ['#resetItem']) { // the top Reset clears the whole selection: see reset-all.mjs
       if (sel === '#reset') { /* need dirty again for the second button */ }
       const l = p.locator(sel); await l.scrollIntoViewIfNeeded();
       const bb = await l.boundingBox();

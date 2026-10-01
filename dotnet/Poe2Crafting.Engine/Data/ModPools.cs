@@ -22,9 +22,13 @@ public sealed class PoolEntry
     /// <summary>True when this entry came from the desecrated (Lich) pool.</summary>
     public bool IsLich { get; init; }
 
+    /// <summary>Set when the class has no such pool in the data and this entry was borrowed from another class (see ModPools.Borrow).</summary>
+    public int? BorrowedFromClass { get; init; }
+
     public PoolEntry WithWeight(double weight, bool isLich) => new()
     {
         Mod = Mod, Weight = weight, Affix = Affix, Influence = Influence, Faction = Faction, Tier = Tier, IsLich = isLich,
+        BorrowedFromClass = BorrowedFromClass,
     };
 }
 
@@ -48,6 +52,21 @@ public sealed class ModPools
     };
 
     public static readonly string[] Factions = { "Amanamu", "Kurgal", "Ulaman" };
+
+    /// <summary>
+    /// The data has no Destruction pool ("Can roll Destruction modifiers", Thrud's Might) for these weapon classes,
+    /// although the game gives it to every weapon (poe2db lists it for Talismans). A class with none uses the pool of the
+    /// closest class that has one: influence -> (class id -> class id to borrow from).
+    /// </summary>
+    public static readonly IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>> Borrow = new Dictionary<int, IReadOnlyDictionary<int, int>>
+    {
+        [1007] = new Dictionary<int, int>
+        {
+            [43] = 55, [44] = 55,                 // Spears, Flails <- One Hand Maces
+            [65] = 68,                            // Quarterstaves <- Two Hand Maces
+            [58] = 57, [90] = 57, [103] = 57,     // Crossbows, Talismans, Trarthan Cannon <- Bows
+        },
+    };
 
     private readonly GameDatabase _db;
     private readonly Dictionary<(int classId, int influence), List<PoolEntry>> _cache = new();
@@ -92,6 +111,16 @@ public sealed class ModPools
         {
             var tier = 1;
             foreach (var entry in group.OrderByDescending(e => e.Mod.MinLevel)) entry.Tier = tier++;
+        }
+
+        // No such pool for this class in the data: borrow the closest class's pool (flagged on each entry).
+        if (list.Count == 0 && Borrow.TryGetValue(influence, out var borrowTable) && borrowTable.TryGetValue(classId, out var source))
+        {
+            list = PoolFor(source, influence).Select(e => new PoolEntry
+            {
+                Mod = e.Mod, Weight = e.Weight, Affix = e.Affix, Influence = e.Influence, Faction = e.Faction,
+                Tier = e.Tier, IsLich = e.IsLich, BorrowedFromClass = source,
+            }).ToList();
         }
 
         _cache[(classId, influence)] = list;

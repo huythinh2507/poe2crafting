@@ -65,6 +65,31 @@ public class DataAndPoolTests
         Assert.Equal(new[] { "Claws" }, without);
     }
 
+    // poe2db lists Thrud's Might (Destruction) mods for Talismans: 2 prefixes and 7 suffixes. The data has none for that
+    // class, so the pool is borrowed from Bows and flagged.
+    [Fact]
+    public void Talismans_borrow_the_Destruction_pool_and_it_matches_what_poe2db_lists()
+    {
+        var e = T.Engine();
+        var pool = e.Pools.PoolFor(T.Talisman, 1007);
+        Assert.Equal(2, pool.Where(p => p.Affix == Affix.Prefix).Select(p => p.Mod.Group).Distinct().Count());
+        Assert.Equal(7, pool.Where(p => p.Affix == Affix.Suffix).Select(p => p.Mod.Group).Distinct().Count());
+        Assert.All(pool, p => Assert.Equal(57, p.BorrowedFromClass));
+
+        // a class that has its own pool is untouched
+        Assert.All(e.Pools.PoolFor(57, 1007), p => Assert.Null(p.BorrowedFromClass));
+    }
+
+    [Fact]
+    public void Desecrated_pool_for_Talismans_is_nine_prefixes_and_nine_suffixes_as_on_poe2db()
+    {
+        var e = T.Engine();
+        var lich = e.Pools.LichPool(T.Talisman);
+        Assert.Equal(9, lich.Count(p => p.Affix == Affix.Prefix));
+        Assert.Equal(9, lich.Count(p => p.Affix == Affix.Suffix));
+        Assert.All(lich, p => Assert.NotNull(p.Faction));
+    }
+
     [Fact]
     public void Mod_text_formats_ranges_and_rolls()
     {

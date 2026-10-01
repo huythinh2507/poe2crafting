@@ -43,7 +43,8 @@ Supporting types: `CraftItem.cs` (the item state), `CraftMethod.cs` (a currency,
 - **Minimum Modifier Level never removes a mod type.** If no tier of a mod reaches the minimum, its highest tier
   stays in the pool (`ApplyMinLevel`). GGG confirmed this.
 - **An unrevealed desecrated slot** takes up an affix slot, counts toward the 4-mod minimum for the Fracturing Orb,
-  counts as mod level 1 for Whittling, and can never be fractured. Revealed desecrated mods can't be fractured either.
+  counts as mod level 1 for Whittling, and cannot be fractured. Once revealed, a desecrated mod is an ordinary
+  fracture candidate.
 - **Omens** are armed in `CraftContext` and consumed by the *next* use of the currency they target
   (`TryCraft` does this). Armed omens change what `RemovalFilterFor` / `AddOptionsFor` return.
 - **Handlers.** Greater/Perfect orbs share the basic orb's rule; only `CraftMethod.MinModLevel` differs.

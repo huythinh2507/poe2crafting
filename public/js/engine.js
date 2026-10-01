@@ -222,11 +222,12 @@ const addRandom = (item, opts) => {
 const removable = item => item.mods.filter(m => !m.fractured);
 
 /**
- * Mods a Fracturing Orb can lock: desecrated mods cannot be fractured (unrevealed ones still count
- * toward the 4-mod minimum), and an already-fractured mod is not a candidate. So 3 normal mods + 1
- * desecrated gives each normal mod a 1-in-3 chance instead of 1-in-4.
+ * Mods a Fracturing Orb can lock: every mod on the item that is not already fractured, INCLUDING a desecrated mod
+ * once it has been revealed. An UNREVEALED desecrated slot is the exception: it counts toward the 4-mod minimum but
+ * cannot be fractured, so 3 mods + 1 unrevealed slot gives each mod a 1-in-3 chance instead of 1-in-4.
+ * (Guides only describe the unrevealed slot; none says a revealed desecrated mod is excluded.)
  */
-export const fractureCandidates = item => item.mods.filter(m => !m.fractured && !m.desecrated);
+export const fractureCandidates = item => item.mods.filter(m => !m.fractured);
 
 /**
  * Everything a removal could hit, after omen filters.
@@ -721,6 +722,58 @@ export function addChances(item, method) {
   const list = eligibleMods(probeRarity(item, handler), addOpts({ minLevel: minLevelOf(method) }, handler));
   const total = list.reduce((s, e) => s + e.weight, 0);
   return { total, map: new Map(list.map(e => [e.mod.id, e.weight / total])) };
+}
+
+// ---- Manual editing ---------------------------------------------------------------------------
+// For setting up an item you bought (a magic base that already has two good mods) or testing a what-if. These are
+// not currency: nothing here is random except the value roll of a freshly added mod.
+
+const RARITY_ORDER = { normal: 0, magic: 1, rare: 2 };
+
+/**
+ * Add a specific mod to an item. A Normal item becomes Magic, and a Magic item becomes Rare as soon as it would hold
+ * more than one prefix or one suffix. `desecrated` picks it from the desecrated (Lich) pool and flags it so.
+ * Returns the added mod, or null if it cannot go on (same group present, no free slot, level too high, corrupted).
+ */
+export function addModManually(item, modId, { desecrated = false } = {}) {
+  if (item.corrupted) return null;
+  const entry = (desecrated ? lichPool(item.classId) : fullPool(item)).find(x => x.mod.id === modId);
+  if (!entry || entry.mod.minlvl > item.ilvl) return null;
+  if (item.mods.some(m => DB.mods.get(m.id).group === entry.mod.group)) return null;
+
+  const prefixes = countAffix(item, 'prefix') + (entry.affix === 'prefix' ? 1 : 0);
+  const suffixes = countAffix(item, 'suffix') + (entry.affix === 'suffix' ? 1 : 0);
+  const needed = prefixes > 1 || suffixes > 1 ? 'rare' : 'magic';
+  const rarity = RARITY_ORDER[needed] > RARITY_ORDER[item.rarity] ? needed : item.rarity;
+  if (openSlots({ ...item, rarity })[entry.affix] <= 0) return null;
+
+  item.rarity = rarity;
+  const added = rollMod(transformed(item, entry.mod));
+  if (desecrated) added.desecrated = true;
+  item.mods.push(added);
+  return added;
+}
+
+/** Overwrite the rolled values of mod `idx`, clamped to each stat's range. Returns the mod, or null. */
+export function setModValues(item, idx, rolls) {
+  const m = item.mods[idx];
+  if (!m) return null;
+  const mod = DB.mods.get(m.id);
+  m.rolls = mod.stats.map((s, i) => {
+    const [a, b] = s.range[0] <= s.range[1] ? s.range : [s.range[1], s.range[0]];
+    const v = Math.min(b, Math.max(a, Number(rolls[i])));
+    return Number.isFinite(v) ? (Number.isInteger(a) && Number.isInteger(b) ? Math.round(v) : Math.round(v * 100) / 100) : m.rolls[i];
+  });
+  return m;
+}
+
+/** Why a flag cannot be set on a mod (null = fine). Used to grey out context-menu entries. */
+export function flagBlocked(item, m, flag) {
+  if (flag === 'fractured') {
+    if (m.fractured) return null;                                   // can always be removed again
+    if (item.mods.some(x => x.fractured)) return 'An item can only have one fractured modifier';
+  }
+  return null;
 }
 
 // ---- Formatting ----

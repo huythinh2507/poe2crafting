@@ -1,5 +1,5 @@
-import { DB, loadData, classesOfGroup, basesOfClass, classPool, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, openSlots, maxAffix, bonus, fullPool, rollMod,
+import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
+import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
   ctx, OMENS, toggleOmen, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 const $ = s => document.querySelector(s);
@@ -13,7 +13,9 @@ const S = {
   openFamilies: new Set(),
   openCurrency: null,   // currency family whose Basic/Greater/Perfect dropdown is open
   reveal: null,       // Well of Souls panel: { idx, options, rerolled }
-  showDesec: false,
+  secClosed: new Set(),   // reference sections the user collapsed
+  openPFam: new Set(),    // expanded families in the reference sections
+  lichFaction: 'all',
   tab: 'Currencies', sub: { Essences: 5, Socketables: 'Special runes' }, socketSearch: '',
   foresee: {},        // Hinekora's Lock: method id -> cached preview {item, changes}
 };
@@ -94,7 +96,7 @@ function selectBase(base) {
   url(); renderAll();
 }
 
-// Back to a clean slate: fresh item, nothing held, no omens armed.
+// Reset item: same base, fresh item, nothing held, no omens armed. (The Reset under the item.)
 function reset() {
   if (!S.base) return;
   S.item = newItem(S.base, S.ilvl);
@@ -102,6 +104,17 @@ function reset() {
   S.method = null; S.openCurrency = null;
   ctx.omens.clear();
   renderCraft();
+}
+
+// Start over: also forget the chosen item group, class and base, back to the first screen. (The Reset next to Change.)
+function resetAll() {
+  S.group = null; S.cls = null; S.base = null; S.item = null;
+  S.history = []; S.log = []; S.foresee = {}; S.reveal = null;
+  S.method = null; S.openCurrency = null; S.ctx = null; S.modal = null;
+  S.baseSearch = ''; S.modSearch = ''; S.socketSearch = '';
+  S.tab = 'Currencies';
+  ctx.omens.clear();
+  url(); renderAll();
 }
 
 function undo() {
@@ -182,19 +195,34 @@ function pickReveal(i) {
   renderCraft();
 }
 
-function addSpecific(modId) {
-  const it = S.item;
-  const mod = DB.mods.get(modId);
-  if (!it || it.rarity === 'normal') return;
-  const e = fullPool(it).find(x => x.mod.id === modId);
-  if (!e || openSlots(it)[e.affix] <= 0) return;
-  if (it.mods.some(m => DB.mods.get(m.id).group === mod.group)) return;
-  S.history.push(structuredClone(it));
+/**
+ * Run a manual edit as one undoable step. `fn(item)` returns the list of changes, or null to cancel (nothing recorded).
+ */
+function editItem(name, fn) {
+  const snapshot = structuredClone(S.item);
+  const changes = fn(S.item);
+  if (!changes) { S.item = snapshot; renderCraft(); return false; }
+  S.history.push(snapshot);
   dropLock();
-  const added = rollMod(mod);
-  it.mods.push(added);
-  S.log.unshift({ name: 'Manual add', changes: [{ op: 'add', mod: added }] });
+  S.reveal = null;
+  S.log.unshift({ name, changes });
   renderCraft();
+  return true;
+}
+
+// Click a mod in the lists to put it on the item. A Normal item becomes Magic, a Magic one Rare once it needs to.
+// `desecrated` adds it from the Lich pool and flags it desecrated.
+function addSpecific(modId, desecrated = false) {
+  if (!S.item) return;
+  const before = S.item.rarity;
+  const ok = editItem('Manual add', it => {
+    const added = addModManually(it, modId, { desecrated });
+    if (!added) return null;
+    const changes = [{ op: 'add', mod: added }];
+    if (it.rarity !== before) changes.push({ op: 'note', text: `Item became ${it.rarity}` });
+    return changes;
+  });
+  if (!ok) S.log.unshift({ name: 'Manual add', changes: [{ op: 'note', text: 'Cannot add that modifier here (same mod already present, no free slot, level too high, or the item is corrupted)' }] }), renderCraft();
 }
 
 function removeSpecific(idx) {
@@ -240,7 +268,7 @@ function renderSelected() {
       <span class="chip active">${esc(DB.text(S.cls.label))}</span>
       <span class="chip active chip-base">${baseArt(S.base, 'chip-art')}${esc(baseName(S.base))}</span>
       <button class="btn" id="change">Change</button>
-      <button class="btn" id="reset">Reset</button>
+      <button class="btn" id="reset" title="Start over: clears the item group, class and base you chose">Reset</button>
     </div>
     <div class="row">
       <input id="modSearch" class="input" placeholder="Search modifiers for this base" value="${esc(S.modSearch)}">
@@ -422,10 +450,10 @@ function renderTargets() {
   const { cands, count, fracture } = TARGETS;
   if (fracture) {
     const pct = (100 / cands.length).toFixed(cands.length % 3 === 0 ? 1 : 0);
-    const skipped = (S.item.mods.filter(m => m.desecrated && !m.fractured).length) + S.item.unrevealed.length;
+    const skipped = S.item.unrevealed.length;
     return `<div class="targets"><b>${esc(methodName(S.method))} will lock one of ${cands.length}:</b> <span class="calc-note">${pct}% each</span>
       ${cands.map(c => `<div>${esc(modLines(DB.mods.get(c.m.id), c.m.rolls).join(' / '))}</div>`).join('')}
-      ${skipped ? `<div class="calc-note">${skipped} desecrated mod${skipped > 1 ? 's' : ''} cannot be fractured but ${skipped > 1 ? 'still count' : 'still counts'} toward the 4-mod minimum.</div>` : ''}</div>`;
+      ${skipped ? `<div class="calc-note">${skipped} unrevealed desecrated slot${skipped > 1 ? 's' : ''} cannot be fractured but ${skipped > 1 ? 'still count' : 'still counts'} toward the 4-mod minimum. Reveal ${skipped > 1 ? 'them' : 'it'} and ${skipped > 1 ? 'they become' : 'it becomes'} a normal fracture candidate.</div>` : ''}</div>`;
   }
   const line = c => {
     const text = c.m ? modLines(DB.mods.get(c.m.id), c.m.rolls).join(' / ') : `Unrevealed desecrated ${c.u.affix}`;
@@ -493,7 +521,7 @@ function renderTooltip() {
   const prefixes = it.mods.map((m, i) => [m, i]).filter(([m]) => affixOf(DB.mods.get(m.id)) === 'prefix');
   const suffixes = it.mods.map((m, i) => [m, i]).filter(([m]) => affixOf(DB.mods.get(m.id)) === 'suffix');
   const mods = [...prefixes, ...suffixes].map(([m, i]) => modHtml(m, i)).join('')
-    + it.unrevealed.map((u, i) => `<div class="unrevealed ${TARGETS?.cands.some(c => c.u === u) ? 'target' : ''}"><span>Unrevealed desecrated ${u.affix}</span> <button class="mini" data-reveal="${i}">Reveal at the Well of Souls</button></div>`).join('');
+    + it.unrevealed.map((u, i) => `<div class="unrevealed ${TARGETS?.cands.some(c => c.u === u) ? 'target' : ''}" data-unrev="${i}"><span>Unrevealed desecrated ${u.affix}</span> <button class="mini" data-reveal="${i}">Reveal at the Well of Souls</button></div>`).join('');
   $('#tooltip').innerHTML = `
     <div class="item ${it.rarity} ${S.method ? 'apply' : ''}" id="itemBox" title="${S.method ? 'Click to apply ' + esc(methodName(S.method)) : 'Select a crafting method'}">
       <div class="item-head">${esc(name)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>
@@ -510,7 +538,7 @@ function renderTooltip() {
         ${augments ? '<div class="sep"></div>' + augments : ''}
         ${it.corrupted ? '<div class="corrupted">Corrupted</div>' : ''}
       </div>
-      <div class="item-actions"><button class="mini" id="undo" ${S.history.length ? '' : 'disabled'}>Undo</button><button class="mini" id="resetItem">Reset</button></div>
+      <div class="item-actions"><button class="mini" id="undo" ${S.history.length ? '' : 'disabled'}>Undo</button><button class="mini" id="resetItem" title="Back to a fresh item of the same base">Reset item</button></div>
     </div>${renderTargets()}${renderReveal()}${renderForesee()}`;
 }
 
@@ -575,29 +603,75 @@ function renderPool() {
     }
     h += '</div>';
   }
-  $('#pool').innerHTML = h + '</div>' + renderDesecratedPool();
+  $('#pool').innerHTML = h + '</div>' + renderReferencePools();
 }
 
-// Lich mods grouped by faction with their share of the (assumed) reveal pool.
-function renderDesecratedPool() {
-  const it = S.item;
-  if (it.rarity !== 'rare') return '';
-  const minLevel = S.method?.handler?.startsWith('poe2_desecrate') ? minLvlOf(S.method) : 0;
-  let h = `<h2>Desecrated pool <button class="mini" id="toggleDesec">${S.showDesec ? 'Hide' : 'Show'}</button></h2>`;
-  if (!S.showDesec) return h;
-  h += `<p class="calc-note">Share of one reveal draw, minimum mod level ${minLevel}. Lich weight ${ctx.settings.lichWeight}${ctx.settings.includeNormal ? ', normal mods included' : ', Lich mods only'}.</p><div class="pool">`;
-  for (const affix of ['prefix', 'suffix']) {
-    const { entries, total } = desecratedChances(it, { affix, minLevel });
-    const lich = entries.filter(e => e.lich).sort((a, b) => a.faction.localeCompare(b.faction) || a.mod.key.localeCompare(b.mod.key));
-    const normalShare = entries.filter(e => !e.lich).reduce((s, e) => s + e.chance, 0);
-    h += `<div><h3 class="${affix}">Desecrated ${affix}es <small>${lich.length} Lich mods · normal mods ${(normalShare * 100).toFixed(1)}%</small></h3>`;
-    for (const e of lich) {
-      h += `<div class="fam"><div class="tier"><span class="t desec-${e.faction}">${e.faction.slice(0, 3)}</span><span class="txt">${modLines(e.mod).map(esc).join('<br>')}</span><span class="lv">${e.mod.minlvl}</span><span class="pct">${(e.chance * 100).toFixed(2)}%</span></div></div>`;
-    }
-    if (!lich.length) h += '<p class="calc-note">No Lich mods for this slot / item level.</p>';
-    h += '</div>';
+// ---------- reference pools: everything this item could ever roll ----------
+// Below the interactive pool: one section per special pool the class can draw from (a meta rune's pool, the
+// Minion / Genesis Tree pools) and the desecrated pool. Read-only, listing every tier; tiers above the item
+// level are greyed.
+
+const famText = arr => modTemplate(arr[0].mod);
+
+function refColumn(secId, kind, entries, weightOf) {
+  const q = S.modSearch.toLowerCase();
+  const byGroup = new Map();
+  for (const e of entries.filter(x => x.affix === kind)) {
+    if (!byGroup.has(e.mod.group)) byGroup.set(e.mod.group, []);
+    byGroup.get(e.mod.group).push(e);
   }
-  return h + '</div>';
+  const fams = [...byGroup.values()]
+    .map(arr => ({ arr: arr.slice().sort((a, b) => a.tier - b.tier), text: famText(arr) }))
+    .filter(f => !q || f.text.toLowerCase().includes(q))
+    .sort((a, b) => a.text.localeCompare(b.text));
+  const tiers = fams.reduce((n, f) => n + f.arr.length, 0);
+  let h = `<div><h3 class="${kind}">${kind}es <small>${fams.length} mods · ${tiers} tiers</small></h3>`;
+  for (const f of fams) {
+    const key = secId + '|' + f.arr[0].mod.group;
+    const faction = f.arr[0].faction;
+    const chips = tagChips(f.arr[0].mod).map(t => `<span class="tagchip">${t}</span>`).join('');
+    const maxLvl = Math.max(...f.arr.map(e => e.mod.minlvl));
+    h += `<div class="fam ref ${S.openPFam.has(key) || !!q ? 'open' : ''}">
+      <div class="fam-name" data-pfam="${key}"><span>${esc(f.text)}${faction ? ` <b class="faction desec-${faction}">${faction}</b>` : ''}${chips}</span>
+        <small>${f.arr.length > 1 ? f.arr.length + ' tiers · ' : ''}lvl ${f.arr.length > 1 ? Math.min(...f.arr.map(e => e.mod.minlvl)) + '–' : ''}${maxLvl}</small></div>
+      <div class="tiers">${f.arr.map(e => `<div class="tier ref ${e.mod.minlvl > S.item.ilvl ? 'above' : ''}" data-addref="${e.mod.id}" data-addlich="${e.lich ? 1 : 0}" title="${esc(DB.text(e.mod.label))} (click to add)">
+        <span class="t">T${e.tier}</span><span class="txt">${modLines(e.mod).map(esc).join('<br>')}</span>
+        <span class="lv">${e.mod.minlvl}</span><span class="pct">${weightOf(e)}</span></div>`).join('')}</div></div>`;
+  }
+  if (!fams.length) h += '<p class="calc-note">None.</p>';
+  return h + `<div class="ptotal">Total <b>${fams.length}</b> mods${tiers !== fams.length ? ` · ${tiers} tiers` : ''}</div></div>`;
+}
+
+function refSection(id, title, note, entries, weightOf) {
+  const open = !S.secClosed.has(id);
+  return `<div class="psec ${open ? 'open' : ''}"><button class="psec-head" data-psec="${id}"><span>${esc(title)}</span><span class="caret">▾</span></button>
+    ${open ? `${note ? `<p class="calc-note">${note}</p>` : ''}<div class="pool">${['prefix', 'suffix'].map(k => refColumn(id, k, entries, weightOf)).join('')}</div>` : ''}</div>`;
+}
+
+function renderReferencePools() {
+  const it = S.item;
+  const socketedInfluences = bonus(it).influences;
+  let h = '<h2 class="ref-title">Other pools <small>everything else this item can roll</small></h2>';
+  const cls = DB.classes.get(it.classId);
+
+  for (const pool of specialPools(it.classId)) {
+    const borrowed = pool.borrowedFrom != null
+      ? `Our data has no ${esc(pool.name)} pool for ${esc(DB.text(cls.label))}; showing the ${esc(DB.text(DB.classes.get(pool.borrowedFrom).label))} pool (the same set poe2db lists for it).`
+      : '';
+    const active = socketedInfluences.has(pool.influence) ? ' <b class="desec">active</b>' : '';
+    const how = pool.influence >= 1009 ? 'Special pool, not unlocked by anything this tool simulates.' : `Unlocked by socketing ${esc(pool.name)}.`;
+    h += refSection('meta' + pool.influence, pool.influence >= 1009 ? pool.name : `${pool.name} modifiers`, `${how} ${borrowed}${active}`, pool.entries, e => e.weight);
+  }
+
+  const lich = lichPool(it.classId);
+  if (lich.length) {
+    const shown = S.lichFaction === 'all' ? lich : lich.filter(e => e.faction === S.lichFaction);
+    const chips = ['all', 'Amanamu', 'Kurgal', 'Ulaman'].map(f => `<button class="chip ${S.lichFaction === f ? 'active' : ''}" data-lichf="${f}">${f === 'all' ? 'All' : f}</button>`).join('');
+    const note = `Revealed at the Well of Souls after a bone. GGG publishes no weights: every Lich mod uses weight ${ctx.settings.lichWeight} (Desecrate tab setting). `
+      + '<div class="chips sub">' + chips + '</div>';
+    h += refSection('desecrated', 'Desecrated Modifiers', note, shown, () => ctx.settings.lichWeight);
+  }
+  return h;
 }
 
 // The selected currency follows the pointer while it is over the item, like holding it in the game.
@@ -615,19 +689,163 @@ function updateCursorIcon() {
   if (!m) el.hidden = true;
 }
 
+// ---------- right-click actions on a mod, and the dialogs they open ----------
+// S.ctx = { kind: 'mod'|'unrev', idx, x, y }   S.modal = { type: 'values'|'details', idx }
+
+const CTX_W = 250;
+
+function renderOverlay() {
+  const el = $('#overlay');
+  if (!el) return;
+  const it = S.item;
+  let h = '';
+
+  if (S.ctx && it) {
+    const { kind, idx } = S.ctx;
+    const x = Math.min(S.ctx.x, window.innerWidth - CTX_W - 12);
+    const y = Math.min(S.ctx.y, window.innerHeight - 340);
+    let items;
+    if (kind === 'mod' && it.mods[idx]) {
+      const m = it.mods[idx];
+      const row = (action, label, blocked) => `<button class="ctx-btn" data-ctx="${action}" ${blocked ? 'disabled' : ''} title="${esc(blocked || '')}">${label}</button>`;
+      items = row('remove', 'Remove modifier')
+        + row('values', 'Modify values')
+        + row('fracture', m.fractured ? 'Remove fracture' : 'Fracture modifier', flagBlocked(it, m, 'fractured'))
+        + row('crafted', m.crafted ? 'Remove crafted mark' : 'Crafted modifier')
+        + row('desecrate', m.desecrated ? 'Remove desecrated mark' : 'Desecrate modifier', flagBlocked(it, m, 'desecrated'))
+        + row('details', 'View modifier details');
+    } else if (kind === 'unrev' && it.unrevealed[idx]) {
+      items = `<button class="ctx-btn" data-ctx="unrev-remove">Remove unrevealed slot</button>
+        <button class="ctx-btn" data-ctx="unrev-reveal">Reveal at the Well of Souls</button>`;
+    }
+    if (items) h += `<div id="ctxMenu" style="left:${x}px;top:${y}px"><div class="ctx-head"><b>Actions</b><button class="mini" data-ctx="close">Close</button></div>${items}</div>`;
+  }
+
+  if (S.modal && it) h += renderModal();
+  el.innerHTML = h;
+}
+
+function renderModal() {
+  const it = S.item;
+  const m = it.mods[S.modal.idx];
+  if (!m) return '';
+  const mod = DB.mods.get(m.id);
+  const entry = poolEntry(it.classId, m.id);
+  const wrap = body => `<div class="modal-back" data-modal="cancel"><div class="modal" id="modalBox">${body}</div></div>`;
+
+  if (S.modal.type === 'values') {
+    const rows = mod.stats.map((s, i) => {
+      const [a, b] = s.range[0] <= s.range[1] ? s.range : [s.range[1], s.range[0]];
+      const whole = Number.isInteger(a) && Number.isInteger(b);
+      const label = DB.text(s.label);
+      return `<label class="val-row"><span>${esc(label.replace('#', '▢'))}</span>
+        <input class="input small" type="number" data-valinput="${i}" min="${a}" max="${b}" step="${whole ? 1 : 0.01}" value="${m.rolls[i]}"><small>${a}–${b}</small></label>`;
+    }).join('');
+    return wrap(`<h3>Modify values</h3><p class="calc-note">${esc(modLines(mod, m.rolls).join(' / '))}</p>${rows}
+      <div class="modal-actions"><button class="btn" data-modal="save">Save</button><button class="mini" data-modal="cancel">Cancel</button></div>`);
+  }
+
+  // details
+  const pool = poolEntry(it.classId, m.id);
+  const siblings = pool ? fullPoolAll(it.classId, mod.group) : [];
+  const poolName = entry?.influence === 1000 ? 'Desecrated (Lich)' : entry?.influence >= 1002 ? `${specialPoolName(entry.influence)} pool` : 'Normal pool';
+  const flags = [m.fractured && 'fractured', m.desecrated && 'desecrated', m.crafted && 'crafted'].filter(Boolean).join(', ') || 'none';
+  const kv = (k, v) => `<tr><td>${k}</td><td>${v}</td></tr>`;
+  const stats = mod.stats.map((s, i) => `${esc(DB.text(s.label).replace('#', `${m.rolls[i]}`))} <small class="calc-note">(range ${s.range[0]}–${s.range[1]})</small>`).join('<br>');
+  const tiers = siblings.map(e => `<div class="tier ref ${e.mod.id === m.id ? 'on' : ''}"><span class="t">T${e.tier}</span><span class="txt">${modLines(e.mod).map(esc).join('<br>')}</span><span class="lv">${e.mod.minlvl}</span><span class="pct">${e.weight}</span></div>`).join('');
+  return wrap(`<h3>Modifier details</h3>
+    <table class="kv">${kv('Name', esc(DB.text(mod.label)))}${kv('Type', affixOf(mod) || 'special')}${kv('Pool', poolName)}${kv('Tier', pool ? 'T' + pool.tier : '–')}
+      ${kv('Mod level', mod.minlvl)}${kv('Weight', pool ? pool.weight : '–')}${kv('Mod key', `<code>${esc(mod.key)}</code>`)}${kv('Group', mod.group)}${kv('Flags', flags)}${kv('Values', stats)}</table>
+    ${tiers ? `<h4>All tiers of this mod</h4><div class="tiers-box">${tiers}</div>` : ''}
+    <div class="modal-actions"><button class="mini" data-modal="cancel">Close</button></div>`);
+}
+
+const fullPoolAll = (classId, group) => [...classPool(classId), ...lichPool(classId), ...specialPools(classId).flatMap(p => p.entries)]
+  .filter(e => e.mod.group === group).sort((a, b) => a.tier - b.tier);
+const specialPoolName = influence => specialPools(S.item.classId).find(p => p.influence === influence)?.name || 'Special';
+
+function ctxAction(action) {
+  const ctx = S.ctx;
+  S.ctx = null;
+  if (!ctx || action === 'close') { renderOverlay(); return; }
+  const { idx, kind } = ctx;
+
+  if (kind === 'unrev') {
+    if (action === 'unrev-reveal') { renderOverlay(); openReveal(idx); return; }
+    editItem('Manual remove', it => { const [u] = it.unrevealed.splice(idx, 1); return u ? [{ op: 'remove', text: `Unrevealed desecrated ${u.affix}` }] : null; });
+    return;
+  }
+  const m = S.item.mods[idx];
+  if (!m) { renderOverlay(); return; }
+  if (action === 'values' || action === 'details') { S.modal = { type: action, idx }; renderOverlay(); return; }
+  if (action === 'remove') {
+    editItem('Manual remove', it => { const [x] = it.mods.splice(idx, 1); return [{ op: 'remove', mod: x }]; });
+  } else if (action === 'fracture') {
+    editItem('Manual edit', it => {
+      const x = it.mods[idx];
+      if (flagBlocked(it, x, 'fractured')) return null;
+      x.fractured = !x.fractured;
+      return [{ op: 'note', text: `${x.fractured ? 'Fractured' : 'Un-fractured'}: ${modLines(DB.mods.get(x.id), x.rolls).join(' / ')}` }];
+    });
+  } else if (action === 'crafted') {
+    editItem('Manual edit', it => {
+      const x = it.mods[idx];
+      x.crafted = !x.crafted;
+      return [{ op: 'note', text: `${x.crafted ? 'Marked crafted' : 'Crafted mark removed'}: ${modLines(DB.mods.get(x.id), x.rolls).join(' / ')}` }];
+    });
+  } else if (action === 'desecrate') {
+    editItem('Manual edit', it => {
+      const x = it.mods[idx];
+      if (flagBlocked(it, x, 'desecrated')) return null;
+      x.desecrated = !x.desecrated;
+      return [{ op: 'note', text: `${x.desecrated ? 'Marked desecrated' : 'Desecrated mark removed'}: ${modLines(DB.mods.get(x.id), x.rolls).join(' / ')}` }];
+    });
+  }
+}
+
+function modalAction(action) {
+  const modal = S.modal;
+  if (action !== 'save' || !modal) { S.modal = null; renderOverlay(); return; }
+  const rolls = [...document.querySelectorAll('[data-valinput]')].map(i => i.value);
+  S.modal = null;
+  editItem('Modify values', it => {
+    const m = setModValues(it, modal.idx, rolls);
+    return m ? [{ op: 'reroll', mod: m }] : null;
+  });
+}
+
 function renderCraft() {
   if (!S.item) { $('#craft').hidden = true; $('#cursorIcon') && ($('#cursorIcon').hidden = true); return; }
   $('#craft').hidden = false;
   renderCurrencies(); renderTooltip(); renderLog(); renderPool();
-  updateCursorIcon();
+  updateCursorIcon(); renderOverlay();
 }
 
 function renderAll() { renderPicker(); renderSelected(); renderCraft(); }
 
 // ---------- events ----------
+// Right-click a mod (or an unrevealed slot) on the item to open its actions.
+document.addEventListener('contextmenu', e => {
+  const mod = e.target.closest('.mod[data-remove]');
+  const unrev = e.target.closest('.unrevealed[data-unrev]');
+  if (!S.item || !(mod || unrev)) return;
+  e.preventDefault();
+  S.modal = null;
+  S.ctx = mod ? { kind: 'mod', idx: +mod.dataset.remove, x: e.clientX, y: e.clientY } : { kind: 'unrev', idx: +unrev.dataset.unrev, x: e.clientX, y: e.clientY };
+  renderOverlay();
+});
+
 document.addEventListener('click', e => {
+  if (S.ctx && !e.target.closest('#ctxMenu')) { S.ctx = null; renderOverlay(); }
+  if (e.target.closest('[data-ctx]')) { ctxAction(e.target.closest('[data-ctx]').dataset.ctx); return; }
+  const modalTarget = e.target.closest('[data-modal]');
+  if (modalTarget) {
+    // clicking the dark backdrop closes the dialog; clicking on the dialog's own text does not
+    if (modalTarget.classList.contains('modal-back') && e.target.closest('#modalBox')) return;
+    modalAction(modalTarget.dataset.modal); return;
+  }
   if (S.openCurrency && !e.target.closest('.cur-wrap')) { S.openCurrency = null; renderCurrencies(); }
-  const t = e.target.closest('[data-group],[data-class],[data-base],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-omen],[data-reveal],[data-pick],[data-fam],[data-add],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#toggleDesec,#itemBox');
+  const t = e.target.closest('[data-group],[data-class],[data-base],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-omen],[data-reveal],[data-pick],[data-fam],[data-pfam],[data-psec],[data-lichf],[data-add],[data-addref],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#itemBox');
   if (!t) return;
   if (t.dataset.group) {
     S.group = +t.dataset.group; S.cls = null; S.base = null; S.item = null; url(); renderAll();
@@ -658,8 +876,14 @@ document.addEventListener('click', e => {
     rerollReveal();
   } else if (t.id === 'revealCancel') {
     S.reveal = null; renderCraft();
-  } else if (t.id === 'toggleDesec') {
-    S.showDesec = !S.showDesec; renderPool();
+  } else if (t.dataset.pfam) {
+    S.openPFam.has(t.dataset.pfam) ? S.openPFam.delete(t.dataset.pfam) : S.openPFam.add(t.dataset.pfam);
+    renderPool();
+  } else if (t.dataset.psec) {
+    S.secClosed.has(t.dataset.psec) ? S.secClosed.delete(t.dataset.psec) : S.secClosed.add(t.dataset.psec);
+    renderPool();
+  } else if (t.dataset.lichf) {
+    S.lichFaction = t.dataset.lichf; renderPool();
   } else if (t.dataset.method) {
     S.method = String(S.method?.id) === t.dataset.method ? null : findMethod(t.dataset.method);
     S.openCurrency = null;
@@ -670,6 +894,8 @@ document.addEventListener('click', e => {
     renderPool();
   } else if (t.dataset.add) {
     addSpecific(+t.dataset.add);
+  } else if (t.dataset.addref) {
+    addSpecific(+t.dataset.addref, t.dataset.addlich === '1');
   } else if (t.dataset.remove != null && !e.target.closest('#itemBox[data-noremove]')) {
     // Alt-click removes a specific mod; plain click applies the selected method.
     if (e.altKey) removeSpecific(+t.dataset.remove);
@@ -678,7 +904,9 @@ document.addEventListener('click', e => {
     if (S.method) apply(S.method);
   } else if (t.id === 'change') {
     S.base = null; S.item = null; url(); renderAll();
-  } else if (t.id === 'reset' || t.id === 'resetItem') {
+  } else if (t.id === 'reset') {
+    resetAll();
+  } else if (t.id === 'resetItem') {
     reset();
   } else if (t.id === 'undo') {
     undo();
@@ -709,6 +937,7 @@ document.addEventListener('pointermove', e => {
   } else el.hidden = true;
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && (S.ctx || S.modal)) { S.ctx = null; S.modal = null; renderOverlay(); return; }
   if (e.key === 'Escape' && S.method) { S.method = null; S.openCurrency = null; renderCraft(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !/INPUT/.test(document.activeElement?.tagName)) { e.preventDefault(); undo(); }
 });
@@ -717,7 +946,7 @@ document.addEventListener('keydown', e => {
 (async function boot() {
   await loadData();
   CATALOGUE = methodCatalogue();
-  $('#app').innerHTML = '<div id="picker"></div><div id="selected"></div><div id="craft" hidden><div id="currencies"></div><div class="layout"><div><h2>Modifiers</h2><div id="pool"></div></div><div class="sticky"><div id="tooltip"></div><div id="log" class="log"></div></div></div></div><div id="cursorIcon" hidden><img alt="" hidden><span></span></div>';
+  $('#app').innerHTML = '<div id="picker"></div><div id="selected"></div><div id="craft" hidden><div id="currencies"></div><div class="layout"><div><h2>Modifiers</h2><div id="pool"></div></div><div class="sticky"><div id="tooltip"></div><div id="log" class="log"></div></div></div></div><div id="cursorIcon" hidden><img alt="" hidden><span></span></div><div id="overlay"></div>';
   const p = new URLSearchParams(location.search);
   if (p.get('group')) S.group = +p.get('group');
   if (p.get('class')) S.cls = DB.classes.get(+p.get('class'));

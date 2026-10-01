@@ -57,6 +57,15 @@ export function affixOf(mod) {
   return t === 1 ? 'prefix' : t === 2 ? 'suffix' : null;
 }
 
+/**
+ * Our data has no Destruction pool ("Can roll Destruction modifiers", Thrud's Might) for these weapon classes,
+ * although the game gives it to every weapon: poe2db lists it for Talismans. For a class that has none we use the
+ * pool of the closest class that does: influence -> { classId -> class to borrow from }. The UI flags borrowed pools.
+ */
+export const POOL_BORROW = {
+  1007: { 43: 55, 44: 55, 58: 57, 65: 68, 90: 57, 103: 57 }, // Spears/Flails <- One Hand Maces, Quarterstaves <- Two Hand Maces, Crossbows/Talismans/Cannon <- Bows
+};
+
 const cache = new Map();
 /** Weighted entries of a class for one influence pool, with tier numbers per mod group. */
 export function poolFor(classId, influence = INFLUENCE.NORMAL) {
@@ -69,7 +78,7 @@ export function poolFor(classId, influence = INFLUENCE.NORMAL) {
     if (!mod || weight <= 0 || influenceOf(mod) !== influence) continue;
     const affix = affixOf(mod);
     if (!affix) continue;
-    list.push({ mod, weight, affix, influence, faction: factionOf(mod) });
+    list.push({ mod, weight, affix, influence, faction: factionOf(mod), lich: influence === INFLUENCE.DESECRATED });
   }
   const byGroup = new Map();
   for (const e of list) {
@@ -79,6 +88,12 @@ export function poolFor(classId, influence = INFLUENCE.NORMAL) {
   for (const arr of byGroup.values()) {
     arr.sort((a, b) => b.mod.minlvl - a.mod.minlvl);
     arr.forEach((e, i) => { e.tier = i + 1; });
+  }
+  const borrowFrom = !list.length ? POOL_BORROW[influence]?.[classId] : null;
+  if (borrowFrom) {
+    const borrowed = poolFor(borrowFrom, influence).map(e => ({ ...e, borrowedFrom: borrowFrom }));
+    cache.set(key, borrowed);
+    return borrowed;
   }
   cache.set(key, list);
   return list;
@@ -111,4 +126,53 @@ export function corruptionPool(classId) {
     if (DB.groups.get(mod.group)?.type === 5) list.push({ mod, weight });
   }
   return list;
+}
+
+// ---- Reference views: every pool an item can draw from ---------------------------------------
+const POOL_LABELS = { 1009: 'Minion modifiers', 1010: 'Genesis Tree modifiers' };
+let runeNames = null;
+
+/** Name of the meta rune that unlocks a pool ("Thrud's Might" for Destruction), read from the runes' own text. */
+export function runeNameFor(influence) {
+  if (!runeNames) {
+    runeNames = {};
+    for (const e of DB.raw.socketables.entries) {
+      const stats = [e.martial, e.armour, e.caster, e.all, ...Object.values(e.class || {})].filter(Boolean);
+      for (const s of stats) {
+        const m = DB.text(s.output).match(/Can roll (\w+) modifiers/);
+        if (m && META_POOLS[m[1]]) runeNames[META_POOLS[m[1]]] = DB.text(DB.items.get(e.item)?.label);
+      }
+    }
+  }
+  return runeNames[influence] || POOL_LABELS[influence] || `Pool ${influence}`;
+}
+
+const metaCache = new Map();
+/**
+ * Every special pool (other than the normal and desecrated ones) a class can draw from: the six meta-rune pools
+ * where the class has them, plus the Minion / Genesis Tree pools on jewellery. { influence, name, entries, borrowedFrom }
+ */
+export function specialPools(classId) {
+  if (metaCache.has(classId)) return metaCache.get(classId);
+  const influences = new Set(Object.values(META_POOLS));
+  for (const id of Object.keys(DB.classmods[classId] || {})) {
+    const mod = DB.mods.get(+id);
+    const inf = mod && influenceOf(mod);
+    if (inf >= 1009 && affixOf(mod)) influences.add(inf);
+  }
+  const out = [];
+  for (const influence of [...influences].sort((a, b) => a - b)) {
+    const entries = poolFor(classId, influence);
+    if (entries.length) out.push({ influence, name: runeNameFor(influence), entries, borrowedFrom: entries[0].borrowedFrom ?? null });
+  }
+  metaCache.set(classId, out);
+  return out;
+}
+
+// Tag chips shown next to a mod family (the usual poe2db-style damage / element / defence tags).
+const CHIP_TAGS = ['damage', 'elemental', 'fire', 'cold', 'lightning', 'chaos', 'physical', 'attack', 'caster', 'minion', 'speed',
+  'critical', 'life', 'mana', 'resistance', 'attribute', 'ailment', 'curse', 'armour', 'evasion', 'defences', 'poison', 'bleed'];
+export function tagChips(mod) {
+  const keys = (DB.groups.get(mod.group)?.tags || []).map(t => DB.raw.tags.entries.find(x => x.id === t)?.key);
+  return CHIP_TAGS.filter(k => keys.includes(k)).slice(0, 3);
 }
