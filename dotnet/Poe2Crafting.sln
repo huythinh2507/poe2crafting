@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Poe2Crafting.Engine", "Poe2Crafting.Engine\Poe2Crafting.Engine.csproj", "{19937ADC-98D3-44B4-A19F-F82AA27B625C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Poe2Crafting.Tests", "Poe2Crafting.Tests\Poe2Crafting.Tests.csproj", "{57C08A1B-ACB3-447F-9773-C2EA7217AA69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Poe2Crafting.Cli", "Poe2Crafting.Cli\Poe2Crafting.Cli.csproj", "{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Debug|x64.Build.0 = Debug|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Debug|x86.Build.0 = Debug|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Release|x64.ActiveCfg = Release|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Release|x64.Build.0 = Release|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Release|x86.ActiveCfg = Release|Any CPU
+		{19937ADC-98D3-44B4-A19F-F82AA27B625C}.Release|x86.Build.0 = Release|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Debug|x64.Build.0 = Debug|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Debug|x86.Build.0 = Debug|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Release|x64.ActiveCfg = Release|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Release|x64.Build.0 = Release|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Release|x86.ActiveCfg = Release|Any CPU
+		{57C08A1B-ACB3-447F-9773-C2EA7217AA69}.Release|x86.Build.0 = Release|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Debug|x64.Build.0 = Debug|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Debug|x86.Build.0 = Debug|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Release|x64.ActiveCfg = Release|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Release|x64.Build.0 = Release|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Release|x86.ActiveCfg = Release|Any CPU
+		{89E60F0E-33D7-45BC-B04D-33C2A0C28C6F}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
