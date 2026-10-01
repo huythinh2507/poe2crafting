@@ -9,3 +9,8 @@ recon/*.log
 # one-off patch scripts used while building
 scripts/patch_*.py
 scripts/fix_*.py
+
+# .NET build output
+bin/
+obj/
+*.user

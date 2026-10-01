@@ -12,6 +12,15 @@ Currencies (incl. Greater/Perfect tiers), Fracturing, Vaal, quality orbs, Hineko
 essences and alloys, desecration (bones, Well of Souls reveal), socketables and meta runes,
 and the crafting omens (Whittling, Light, Erasure, Annulment, Exaltation, Coronation, ...).
 
+## C# version of the logic
+`dotnet/` holds the same crafting rules in C# (readable, typed, 66 tests, console demo). The website still runs
+the JavaScript engine; the C# project exists so the logic can be read and checked. See `dotnet/README.md`.
+
+```
+dotnet test dotnet/Poe2Crafting.sln
+dotnet run --project dotnet/Poe2Crafting.Cli
+```
+
 ## Layout
 - `public/js/data.js` - game data loading and mod pools
 - `public/js/engine.js` - crafting rules (pure logic, no DOM)
