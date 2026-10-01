@@ -115,6 +115,7 @@ export function newItem(base, ilvl = 100) {
     catalyst: null,   // jewellery catalyst quality: { tag: 'life', quality: 12 } (replaces the previous type when another catalyst is used)
     sockets: base.sockets || 0,
     socketed: [],     // [{ item, name, lines, influence?, suffix?, crafted?, transform? }]
+    extraSlots: { prefix: 0, suffix: 0 }, // +1 prefix / suffix allowed from a Potent Liquid Contempt; stays after the crafted mod is removed
     corrupted: false,
     sanctified: false, // Sanctified by a Divine Orb + Omen of Sanctification: values multiplied once, item locked
     corruption: [],   // Vaal enchant implicits
@@ -163,8 +164,13 @@ const affixLimits = item => {
 export const maxAffix = item => {
   const [p, s] = affixLimits(item)[item.rarity];
   if (item.rarity !== 'rare') return [p, s];
-  const slots = implicitSlots(item);
-  return [Math.max(0, p + slots.prefix), Math.max(0, s + slots.suffix + bonus(item).suffix)];
+  const slots = implicitSlots(item), extra = item.extraSlots || { prefix: 0, suffix: 0 };
+  return [Math.max(0, p + slots.prefix + extra.prefix), Math.max(0, s + slots.suffix + bonus(item).suffix + extra.suffix)];
+};
+/** Max prefixes / suffixes WITHOUT the capacity a Potent Liquid Contempt added. A side holding more than this is "over its base cap". */
+const baseCap = item => {
+  const [p, s] = maxAffix(item), extra = item.extraSlots || { prefix: 0, suffix: 0 };
+  return { prefix: p - extra.prefix, suffix: s - extra.suffix };
 };
 
 export const countAffix = (item, kind) =>
@@ -301,6 +307,10 @@ export function removalPool(item, opts = {}) {
     ...item.unrevealed.map(u => ({ u, level: 1, affix: u.affix, desecrated: true })),
   ];
   if (opts.noMark) c = c.filter(x => !x.m || !isMark(x.m));
+  if (opts.overcapLock) { // Chaos Orb cannot take from a side that holds more mods than its base cap (the Contempt jewel trick)
+    const cap = baseCap(item);
+    c = c.filter(x => countAffix(item, x.affix) <= cap[x.affix]);
+  }
   if (opts.kind) c = c.filter(x => x.affix === opts.kind);
   if (opts.desecrated) c = c.filter(x => x.desecrated);
   if (opts.whittle && c.length) {
@@ -326,6 +336,7 @@ function removeRandom(item, kind = null, opts = {}) {
 export function removalOpts(handler, essenceReplaces = false) {
   const o = ctx.omens, r = {};
   if (handler === 'poe2_chaos') {
+    r.overcapLock = true;
     if (o.has('whittling')) r.whittle = true;
     if (o.has('erasure_prefix')) r.kind = 'prefix';
     if (o.has('erasure_suffix')) r.kind = 'suffix';
@@ -406,6 +417,7 @@ const BONE_BASES = [
 ];
 // Extra per-handler requirements that aren't in the site's constraint lists.
 CONSTRAINTS.can_be_rare = i => groupOf(i) !== 11;   // relics stay magic
+CONSTRAINTS.distilled_emotions_base = i => groupOf(i) === 10; // jewels
 const HANDLER_EXTRA = {
   poe2_regal: ['can_be_rare'],
   poe2_alchemy: ['can_be_rare'],
@@ -575,6 +587,49 @@ function essence(item, _o, method) {
   const rolled = { ...rollMod(mod), crafted: true };
   item.mods.push(rolled);
   return [gone, { op: 'add', mod: rolled }];
+}
+
+// ---- Liquid Emotions (jewels) ----
+// Like a Greater Essence: removes a random modifier and adds one guaranteed CRAFTED modifier. data.emotions.items lists, per jewel class,
+// the modifiers an emotion can add (normal emotions: Ruby / Emerald / Sapphire / Diamond; Ancient ones: Time-Lost jewels). When several are
+// listed one is picked at random (Potent Contempt: +1 prefix OR +1 suffix allowed; Potent Ferocity: effect of prefixes OR suffixes).
+export const emotionMods = (item, emotionItemId) => (DB.raw.emotions?.items?.[emotionItemId]?.[item.classId] || []).map(id => DB.mods.get(id)).filter(Boolean);
+export const emotionApplicable = (item, emotionItemId) => item.rarity === 'rare' && !craftedFull(item) && emotionMods(item, emotionItemId).length > 0;
+const ALLOWED_STAT = { local_maximum_prefixes_allowed_: 'prefix', local_maximum_suffixes_allowed_: 'suffix' };
+
+function emotion(item, _o, method) {
+  item.extraSlots ??= { prefix: 0, suffix: 0 };
+  const id = method.emotion?.item;
+  if (!emotionApplicable(item, id)) return null;
+  // The removal can only take from a side that is not over its base cap (same lock as the Chaos Orb), so a jewel holding three suffixes
+  // keeps them: only mods whose removal is possible can roll, e.g. "increased Effect of Suffixes" (a prefix-slot mod) with 2 prefixes.
+  const removal = mod => {
+    const kind = affixOf(mod);
+    const pool = removalPool(item, { noMark: true, overcapLock: true, kind: openSlots(item)[kind] > 0 ? undefined : kind });
+    return pool.length && !item.mods.some(m => DB.mods.get(m.id).group === mod.group);
+  };
+  const feasible = emotionMods(item, id).filter(removal);
+  if (!feasible.length) return null;
+  const mod = pick(feasible);
+  const kind = affixOf(mod);
+  const gone = removeRandom(item, openSlots(item)[kind] > 0 ? null : kind, { noMark: true, overcapLock: true });
+  if (!gone) return null;
+  if (openSlots(item)[kind] <= 0) return null;
+  const rolled = { ...rollMod(mod), crafted: true };
+  item.mods.push(rolled);
+  // "+1 Prefix / Suffix Modifier allowed" keeps working after the crafted modifier is removed again
+  mod.stats.forEach(st => { const side = ALLOWED_STAT[(DB.raw.stats[st.index]?.id || '').replace(/\+$/, '')]; if (side) item.extraSlots[side] = 1; });
+  return [gone, { op: 'add', mod: rolled }];
+}
+
+// Potent Liquid Ferocity: "#% increased Effect of Prefixes / Suffixes" scales the rolled values of that side's other modifiers.
+const EFFECT_STAT = { prefix: 'local_non_unique_item_explicit_prefix_mod_magnitudes_+%', suffix: 'local_non_unique_item_explicit_suffix_mod_magnitudes_+%' };
+function effectScaled(item, mod, value) {
+  if (!item || /^CraftedJewel/.test(mod.key)) return value;
+  const side = affixOf(mod);
+  const pct = side ? localStatOf(item, EFFECT_STAT[side]) : 0;
+  if (!pct) return value;
+  return Number.isInteger(value) ? Math.floor(value * (100 + pct) / 100 + 1e-9) : Math.round(value * (100 + pct)) / 100;
 }
 
 // ---- Socketables (runes, soul cores, idols, ...) ----
@@ -859,6 +914,7 @@ const HANDLERS = {
   glassblower_bauble: i => addQuality(i),
   artificer: i => { i.sockets += 1; return note(`Socket added (${i.sockets})`); },
   poe2_essence: essence,
+  poe2_distilled_emotions: emotion,
   poe2_socketable: socket,
   poe2_desecrate: desecrate,
   hinekora_lock: i => { i.lock = true; return note("Hinekora's Lock armed — the next currency's result is foreseen"); },
@@ -1091,7 +1147,7 @@ export const modTemplate = mod => [...new Set(mod.stats.map(s => DB.text(s.label
 /** Text lines for a mod. rolls omitted = show full ranges (pool view). */
 export function modLines(mod, rolls, item) {
   const labels = mod.stats.map(s => DB.text(s.label));
-  const sc = v => catalystScaled(item, mod, v);   // catalyst quality scales the value and its range
+  const sc = v => effectScaled(item, mod, catalystScaled(item, mod, v));   // catalyst quality and Potent Ferocity scale the value and its range
   const fmt = (s, i) => {
     if (!Array.isArray(s.range)) return '';        // stat with no value (Essence of Delirium's granted passive)
     const [a, b] = s.range.map(sc);
