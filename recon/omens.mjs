@@ -302,7 +302,7 @@ const res = await p.evaluate(async () => {
   }
   {
     // Crystallisation: Perfect essence removes only prefix/suffix
-    const eP = DB.raw.essences.entries.find(x => x.type === 3 && DB.raw.essences.byessences[x.id]?.[CLS]);
+    const eP = DB.raw.essences.entries.find(x => x.type === 3 && DB.raw.essences.byessences[x.id]?.[DB.classes.get(CLS).class]);
     const method = { handler: 'poe2_essence', essence: eP, properties: [], constraints: [] };
     const mod = E.essenceMod(fresh(), eP); const kind = D.affixOf(mod);
     let preOk = 0, sufOk = 0, n = 80;

@@ -1,5 +1,5 @@
-import { DB, loadData, classesOfGroup, basesOfClass, classPool, poolEntry, affixOf, factionOf } from './data.js';
-import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketAllowed, checkConstraints, handlerImplemented, modLines, modTemplate, openSlots, maxAffix, bonus, fullPool, rollMod,
+import { DB, loadData, classesOfGroup, basesOfClass, classPool, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
+import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketAllowed, essenceApplicable, checkConstraints, handlerImplemented, modLines, modTemplate, openSlots, maxAffix, bonus, fullPool, rollMod,
   ctx, OMENS, toggleOmen, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 const $ = s => document.querySelector(s);
@@ -59,6 +59,11 @@ const methodName = m => m.name || (m.item != null && DB.items.get(m.item) ? DB.t
 const iconPath = id => {
   const img = DB.items.get(id)?.image;
   return img ? 'assets/items/' + img.replace(/^Art\/2DItems\//, '') + '.webp' : null;
+};
+/** Base item art (weapons so far), sized by the base's inventory footprint. */
+const baseArt = (b, cls = 'base-art') => {
+  const src = b.image ? 'assets/items/' + b.image.replace(/^Art\/2DItems\//, '') + '.webp' : null;
+  return src ? `<img class="${cls}" src="${src}" alt="" onerror="this.remove()">` : '';
 };
 function methodIcon(m) {
   let id = m.item ?? m.essence?.item ?? m.socket?.item;
@@ -211,7 +216,7 @@ function renderBases() {
   const q = S.baseSearch.toLowerCase();
   const bases = basesOfClass(S.cls.id).filter(b => baseName(b).toLowerCase().includes(q));
   $('#bases').innerHTML = bases.map(b =>
-    `<button class="base" data-base="${b.id}"><span>${esc(baseName(b))}</span><span>iLvl ${b.drop}</span></button>`).join('') || '<p class="calc-note">No bases.</p>';
+    `<button class="base" data-base="${b.id}"><span class="base-thumb">${baseArt(b, 'base-thumb-img')}</span><span class="base-info"><span>${esc(baseName(b))}</span><span class="base-lvl">iLvl ${b.drop}</span></span></button>`).join('') || '<p class="calc-note">No bases.</p>';
 }
 
 function renderSelected() {
@@ -221,7 +226,7 @@ function renderSelected() {
     <div class="row">
       <span class="chip active">${esc(DB.text(DB.categories.find(c => c.id === S.group).label))}</span>
       <span class="chip active">${esc(DB.text(S.cls.label))}</span>
-      <span class="chip active">${esc(baseName(S.base))}</span>
+      <span class="chip active chip-base">${baseArt(S.base, 'chip-art')}${esc(baseName(S.base))}</span>
       <button class="btn" id="change">Change</button>
       <button class="btn" id="reset">Reset</button>
     </div>
@@ -235,17 +240,20 @@ const handlerBase = h => (h.startsWith('poe2_desecrate') ? 'poe2_desecrate' : h.
 
 // Omens that matter for what is selected right now.
 function relevantOmens() {
-  if (S.tab === 'Desecrate') return OMENS.filter(o => o.for === 'poe2_desecrate' || o.for === 'reveal');
+  if (S.tab === 'Desecrate') return OMENS.filter(o => !o.retired && (o.for === 'poe2_desecrate' || o.for === 'reveal'));
   const m = S.method;
   if (!m) return [];
   const base = handlerBase(m.handler);
   if (base === 'poe2_essence' && !essenceReplaces(m.essence)) return [];
-  return OMENS.filter(o => o.for === base);
+  return OMENS.filter(o => !o.retired && o.for === base);
 }
 
 function renderOmens() {
   const list = relevantOmens();
-  if (!list.length) return S.tab === 'Desecrate' ? '' : '<p class="calc-note omens-note">Select a currency to see the omens that work with it.</p>';
+  if (!list.length) {
+    if (S.tab === 'Desecrate') return '';
+    return `<p class="calc-note omens-note">${S.method ? 'No obtainable omens work with this currency.' : 'Select a currency to see the omens that work with it.'}</p>`;
+  }
   const faction = it => !factionOmenApplies(it);
   return '<h3 class="subhead">Omens <small>(consumed by the next use of the currency)</small></h3><div class="chips sub">'
     + list.map(o => {
@@ -271,7 +279,7 @@ const TABS = ['Currencies', 'Essences', 'Desecrate', 'Socketables', 'Generate'];
 
 function essenceMethods(it) {
   const E = DB.raw.essences;
-  return E.entries.filter(e => E.byessences[e.id]?.[it.classId]).map(e => ({
+  return E.entries.filter(e => essenceModIds(e.id, it.classId).length).map(e => ({
     id: 'ess' + e.id, handler: 'poe2_essence', essence: e, name: DB.text(e.label), group: 'Essences',
     constraints: ['is_modifiable', e.type <= 2 ? 'rarity_magic' : 'rarity_rare'],
   }));
@@ -297,7 +305,7 @@ const allMethods = () => [...CATALOGUE, ...(S.item ? [...essenceMethods(S.item),
 const findMethod = id => allMethods().find(m => String(m.id) === String(id));
 
 const usable = (it, m) => checkConstraints(it, m.constraints, m.handler)
-  && (m.handler !== 'poe2_essence' || !essenceReplaces(m.essence) || !craftedFull(it))
+  && (m.handler !== 'poe2_essence' || essenceApplicable(it, m.essence))
   && (m.handler !== 'poe2_socketable' || socketAllowed(it, m.socket));
 
 function methodButton(it, m) {
@@ -457,6 +465,7 @@ function renderTooltip() {
     <div class="item ${it.rarity} ${S.method ? 'apply' : ''}" id="itemBox" title="${S.method ? 'Click to apply ' + esc(methodName(S.method)) : 'Select a crafting method'}">
       <div class="item-head">${esc(name)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>
       <div class="item-body">
+        ${baseArt(b, 'item-art')}
         <div class="kind">${esc(DB.text(S.cls.label))}</div>
         ${props.join('')}
         <div class="sep"></div>
@@ -495,7 +504,11 @@ function renderPool() {
   const presentIds = new Set(it.mods.map(m => m.id));
   const pool = fullPool(it).filter(e => e.mod.minlvl <= it.ilvl);
   const metaOn = bonus(it).influences.size > 0;
-  let h = '<div class="pool">';
+  const minLvl = S.method ? minLvlOf(S.method) : 0;
+  let h = minLvl && chance
+    ? `<p class="calc-note min-note"><b>${esc(methodName(S.method))}</b> can only add mods of level ${minLvl}+. Lower tiers are greyed out. A mod with no tier that high keeps its highest tier.</p>`
+    : '';
+  h += '<div class="pool">';
   for (const kind of ['prefix', 'suffix']) {
     const byGroup = new Map();
     for (const e of pool.filter(x => x.affix === kind)) {
@@ -517,9 +530,12 @@ function renderPool() {
         <div class="tiers">`;
       for (const e of f.arr) {
         const p = chance?.map.get(e.mod.id);
-        h += `<div class="tier ${presentIds.has(e.mod.id) ? 'on' : ''} ${present.has(g) && !presentIds.has(e.mod.id) ? 'blocked' : ''}" data-add="${e.mod.id}" title="${esc(DB.text(e.mod.label))}">
+        // excluded purely by the currency's Minimum Modifier Level (Greater / Perfect orbs)
+        const belowMin = !!chance && !p && minLvl > 0 && e.mod.minlvl < minLvl && e.mod.minlvl <= it.ilvl && !present.has(g);
+        const tip = belowMin ? `Below the minimum modifier level (${minLvl}) of ${methodName(S.method)}` : DB.text(e.mod.label);
+        h += `<div class="tier ${presentIds.has(e.mod.id) ? 'on' : ''} ${present.has(g) && !presentIds.has(e.mod.id) ? 'blocked' : ''} ${belowMin ? 'below' : ''}" data-add="${e.mod.id}" title="${esc(tip)}">
           <span class="t">T${e.tier}</span><span class="txt">${modLines(e.mod).map(esc).join('<br>')}</span>
-          <span class="lv">${e.mod.minlvl}</span><span class="pct">${p ? (p * 100).toFixed(p < 0.1 ? 2 : 1) + '%' : '–'}</span></div>`;
+          <span class="lv">${e.mod.minlvl}</span><span class="pct">${p ? (p * 100).toFixed(p < 0.1 ? 2 : 1) + '%' : belowMin ? `<small>&lt; lvl ${minLvl}</small>` : '–'}</span></div>`;
       }
       h += '</div></div>';
     }
@@ -668,5 +684,5 @@ document.addEventListener('keydown', e => {
   if (p.get('class')) S.cls = DB.classes.get(+p.get('class'));
   renderAll();
   if (p.get('item') && DB.items.get(+p.get('item'))) selectBase(DB.items.get(+p.get('item')));
-  window.__craft = { S, DB, ctx, apply, openReveal, pickReveal, CATALOGUE, allMethods, findMethod }; // debug handle
+  window.__craft = { S, DB, ctx, apply, renderCraft, openReveal, pickReveal, CATALOGUE, allMethods, findMethod }; // debug handle
 })();

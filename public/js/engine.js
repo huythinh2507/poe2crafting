@@ -1,5 +1,5 @@
 // Pure crafting logic: no DOM access.
-import { DB, classPool, lichPool, poolFor, corruptionPool, affixOf, FACTIONS, META_POOLS } from './data.js';
+import { DB, classPool, lichPool, poolFor, corruptionPool, affixOf, essenceModIds, FACTIONS, META_POOLS } from './data.js';
 
 export const MAX_AFFIX = { normal: [0, 0], magic: [1, 1], rare: [3, 3] };
 export const MAX_QUALITY = 20;
@@ -16,14 +16,15 @@ export const ctx = {
 };
 
 // Omens are consumed by the *next* use of the currency they target ("for"). Wording follows poe2db.
-// `todo` omens are listed but not simulated. `excl` = mutually exclusive groups.
+// `todo` omens are listed but not simulated. `retired` omens exist in the data but can no longer be obtained
+// (drop disabled in patch 0.3.0), so the UI hides them. `excl` = mutually exclusive groups.
 export const OMENS = [
   // Chaos Orb
   { id: 'whittling', name: 'Omen of Whittling', for: 'poe2_chaos', hint: 'Chaos Orb removes the lowest-LEVEL modifier (required level, not tier). Unrevealed desecrated slots count as level 1. Ties: random.' },
   { id: 'erasure_prefix', name: 'Omen of Sinistral Erasure', for: 'poe2_chaos', hint: 'Chaos Orb removes only prefix modifiers.', excl: 'erasure' },
   { id: 'erasure_suffix', name: 'Omen of Dextral Erasure', for: 'poe2_chaos', hint: 'Chaos Orb removes only suffix modifiers.', excl: 'erasure' },
   // Orb of Annulment
-  { id: 'annul_two', name: 'Omen of Greater Annulment', for: 'poe2_annulment', hint: 'Annulment removes two modifiers.' },
+  { id: 'annul_two', name: 'Omen of Greater Annulment', for: 'poe2_annulment', hint: 'Annulment removes two modifiers.', retired: true },
   { id: 'annul_prefix', name: 'Omen of Sinistral Annulment', for: 'poe2_annulment', hint: 'Annulment removes only prefix modifiers.', excl: 'annul' },
   { id: 'annul_suffix', name: 'Omen of Dextral Annulment', for: 'poe2_annulment', hint: 'Annulment removes only suffix modifiers.', excl: 'annul' },
   { id: 'light', name: 'Omen of Light', for: 'poe2_annulment', hint: 'Annulment removes only Desecrated modifiers (revealed or not).', excl: 'annul' },
@@ -34,12 +35,12 @@ export const OMENS = [
   { id: 'exalt_homog', name: 'Omen of Homogenising Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds a modifier of the same type (shares a tag) as an existing modifier.' },
   { id: 'exalt_catalyst', name: 'Omen of Catalysing Exaltation', for: 'poe2_exalted', todo: true, hint: 'Needs the catalyst system, not simulated yet.' },
   // Regal Orb
-  { id: 'regal_prefix', name: 'Omen of Sinistral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a prefix.', excl: 'regal' },
-  { id: 'regal_suffix', name: 'Omen of Dextral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a suffix.', excl: 'regal' },
+  { id: 'regal_prefix', name: 'Omen of Sinistral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a prefix.', excl: 'regal', retired: true },
+  { id: 'regal_suffix', name: 'Omen of Dextral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a suffix.', excl: 'regal', retired: true },
   { id: 'regal_homog', name: 'Omen of Homogenising Coronation', for: 'poe2_regal', hint: 'Regal Orb adds a modifier of the same type (shares a tag) as an existing modifier.' },
   // Orb of Alchemy
-  { id: 'alch_prefix', name: 'Omen of Sinistral Alchemy', for: 'poe2_alchemy', hint: 'Alchemy results in the maximum number of prefixes (3 prefixes, 1 suffix).', excl: 'alch' },
-  { id: 'alch_suffix', name: 'Omen of Dextral Alchemy', for: 'poe2_alchemy', hint: 'Alchemy results in the maximum number of suffixes (3 suffixes, 1 prefix).', excl: 'alch' },
+  { id: 'alch_prefix', name: 'Omen of Sinistral Alchemy', for: 'poe2_alchemy', hint: 'Alchemy results in the maximum number of prefixes (3 prefixes, 1 suffix).', excl: 'alch', retired: true },
+  { id: 'alch_suffix', name: 'Omen of Dextral Alchemy', for: 'poe2_alchemy', hint: 'Alchemy results in the maximum number of suffixes (3 suffixes, 1 prefix).', excl: 'alch', retired: true },
   // Vaal / Divine
   { id: 'corruption', name: 'Omen of Corruption', for: 'poe2_vaal', hint: 'Vaal Orb always results in a change (never the "no change" outcome).' },
   { id: 'blessed', name: 'Omen of the Blessed', for: 'poe2_divine', hint: 'Divine Orb rerolls only implicit modifiers.' },
@@ -394,12 +395,21 @@ const addQuality = (item, cap = MAX_QUALITY) => {
 // ---- Essences (incl. Alloys) ----
 // Essence mod for a class: highest tier the item level allows.
 export function essenceMod(item, essence) {
-  const ids = DB.raw.essences.byessences[essence.id]?.[item.classId] || [];
+  const ids = essenceModIds(essence.id, item.classId);
   const mods = ids.map(id => DB.mods.get(id)).filter(Boolean);
   const fit = mods.filter(m => m.minlvl <= item.ilvl).sort((a, b) => b.minlvl - a.minlvl);
   return fit[0] || mods.sort((a, b) => a.minlvl - b.minlvl)[0] || null;
 }
 export const essenceReplaces = essence => essence.type >= 3; // Perfect, Corrupted, Alloy
+
+/** Can this essence work on the item right now? (UI greys the button out when not) */
+export function essenceApplicable(item, essence) {
+  const mod = essenceMod(item, essence);
+  if (!mod) return false;
+  const clash = item.mods.some(m => DB.mods.get(m.id).group === mod.group);
+  if (!essenceReplaces(essence)) return item.rarity === 'magic' && !clash;
+  return item.rarity === 'rare' && !craftedFull(item);
+}
 
 function essence(item, _o, method) {
   const e = method.essence;

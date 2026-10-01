@@ -66,7 +66,7 @@ const res = await p.evaluate(async () => {
       }
       return `${name}: lost fractured ${lost}/${runs}`;
     };
-    const ess = (type) => { const e = DB.raw.essences.entries.find(x => x.type === type && DB.raw.essences.byessences[x.id]?.[4]); return e && { handler: 'poe2_essence', essence: e, properties: [], constraints: [] }; };
+    const ess = (type) => { const e = DB.raw.essences.entries.find(x => x.type === type && DB.raw.essences.byessences[x.id]?.[DB.classes.get(4).class]); return e && { handler: 'poe2_essence', essence: e, properties: [], constraints: [] }; };
     out.bug3 = [
       tryPath('chaos', null, it => E.applyMethod(it, method('poe2_chaos'))),
       tryPath('annulment', null, it => E.applyMethod(it, method('poe2_annulment'))),
