@@ -14,6 +14,7 @@ for (const e of raw.essences.entries) ids.add(e.item);
 for (const e of raw.socketables.entries) ids.add(e.item);
 for (const e of raw.methods.omens.entries) ids.add(e.item);
 for (const i of raw.items.entries) if (/Hinekora/i.test(i.key)) ids.add(i.id);
+for (const id of Object.keys(raw.emotions?.items || {})) ids.add(+id); // liquid emotions
 
 // base item art for weapons: one-handed (group 7) and two-handed (group 8) classes
 const weaponClasses = new Set([...(raw.classes.bygroup[7] || []), ...(raw.classes.bygroup[8] || [])]);

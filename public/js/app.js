@@ -1,5 +1,5 @@
 import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { CATALYSTS, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
+import { CATALYSTS, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
   ctx, OMENS, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 const $ = s => document.querySelector(s);
@@ -377,8 +377,17 @@ function removalTargets() {
   return { cands: removalPool(S.item, opts), count: count || 1, opts };
 }
 
-const TABS = ['Currencies', 'Essences', 'Desecrate', 'Socketables', 'Catalysts'];
+const TABS = ['Currencies', 'Essences', 'Emotions', 'Desecrate', 'Socketables', 'Catalysts'];
 const hasCatalystTab = it => !!it && (checkConstraints({ ...it, corrupted: false }, ['catalyst_base']) || checkConstraints({ ...it, corrupted: false }, ['refined_catalyst_base']));
+
+// Liquid Emotions (jewels only): the ones whose data lists mods for this jewel class, so Ancient ones show on Time-Lost jewels only.
+function emotionMethods(it) {
+  const items = DB.raw.emotions?.items || {};
+  return Object.keys(items).map(Number).filter(id => items[id][it.classId]).map(id => ({
+    id: 'emo' + id, handler: 'poe2_distilled_emotions', emotion: { item: id }, item: id, name: DB.text(DB.items.get(id)?.label), group: 'Emotions',
+    constraints: ['is_modifiable', 'rarity_rare', 'distilled_emotions_base'],
+  }));
+}
 
 function essenceMethods(it) {
   const E = DB.raw.essences;
@@ -404,11 +413,12 @@ function socketMethods(it) {
   }).filter(m => m.name && !m.name.startsWith('[DNT') && socketEffect(it, m.socket));
 }
 
-const allMethods = () => [...CATALOGUE, ...(S.item ? [...essenceMethods(S.item), ...socketMethods(S.item)] : [])];
+const allMethods = () => [...CATALOGUE, ...(S.item ? [...essenceMethods(S.item), ...emotionMethods(S.item), ...socketMethods(S.item)] : [])];
 const findMethod = id => allMethods().find(m => String(m.id) === String(id));
 
 const usable = (it, m) => checkConstraints(it, m.constraints, m.handler)
   && (m.handler !== 'poe2_essence' || essenceApplicable(it, m.essence))
+  && (m.handler !== 'poe2_distilled_emotions' || emotionApplicable(it, m.emotion.item))
   && (m.handler !== 'poe2_socketable' || socketSlots(it, m.socket).length > 0);
 
 function methodButton(it, m) {
@@ -423,6 +433,9 @@ function methodButton(it, m) {
     const mod = essenceMod(it, m.essence);
     const txt = mod ? modLines(mod).join(' / ') : '';
     hint = txt; extra = `<small class="lvl">${esc(txt)}</small>`;
+  } else if (m.handler === 'poe2_distilled_emotions') {
+    const txt = emotionMods(it, m.emotion.item).map(mod => modLines(mod).join(' / ')).join('  —or—  ');
+    hint = 'Removes a random modifier and adds a guaranteed crafted one: ' + txt; extra = `<small class="lvl">${esc(txt)}</small>`;
   } else if (m.handler === 'poe2_socketable') {
     const txt = socketEffect(it, m.socket).join(' / ');
     hint = txt; extra = `<small class="lvl">${esc(txt)}</small>`;
@@ -460,7 +473,7 @@ function renderCurrencies() {
   const it = S.item;
   pruneOmens();
   let h = '<h2>Choose a crafting method</h2><div class="chips tabs">';
-  const tabs = TABS.filter(t => t !== 'Catalysts' || hasCatalystTab(it));
+  const tabs = TABS.filter(t => (t !== 'Catalysts' || hasCatalystTab(it)) && (t !== 'Emotions' || emotionMethods(it).length));
   if (!tabs.includes(S.tab)) S.tab = 'Currencies';
   for (const t of tabs) h += `<button class="chip ${S.tab === t ? 'active' : ''}" data-tab="${t}">${t}</button>`;
   h += '</div>';
@@ -482,6 +495,10 @@ function renderCurrencies() {
     const list = essenceMethods(it).filter(m => m.essence.type === S.sub.Essences);
     h += '<div class="currencies">' + (list.map(m => methodButton(it, m)).join('') || '<p class="calc-note">None for this item class.</p>') + '</div>';
     if (S.sub.Essences >= 3) h += '<p class="calc-note">Removes a random mod, adds a guaranteed one. Only one crafted mod per item (alloys, perfect and corrupted essences).</p>';
+  } else if (S.tab === 'Emotions') {
+    const list = emotionMethods(it);
+    h += '<div class="currencies">' + list.map(m => methodButton(it, m)).join('') + '</div>';
+    h += '<p class="calc-note">Like a Greater Essence: removes a random modifier and adds a guaranteed crafted one (one crafted modifier per item). The +1 prefix / suffix allowed of Potent Contempt stays after the crafted modifier is removed, and then Chaos Orbs cannot remove from the side that holds more modifiers than its normal cap. Ancient emotions work on Time-Lost jewels.</p>';
   } else if (S.tab === 'Socketables') {
     h += '<div class="chips sub">' + SOCKET_CATS.map(c => `<button class="chip ${S.sub.Socketables === c ? 'active' : ''}" data-sub="${c}">${c}</button>`).join('') + '</div>';
     h += `<div class="row"><input id="socketSearch" class="input" placeholder="Search socketables" value="${esc(S.socketSearch)}"></div><div class="currencies" id="socketList"></div>`;
