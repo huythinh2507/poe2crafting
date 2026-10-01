@@ -75,7 +75,7 @@ const res = await p.evaluate(async () => {
       tryPath('bone on full item', null, it => E.applyMethod(it, method('poe2_desecrate_mid'))),
       tryPath('vaal reroll', null, it => { for (let k = 0; k < 6; k++) { it.corrupted = false; E.applyMethod(it, method('poe2_vaal')); } return []; }),
       tryPath('putrefaction', null, it => { E.ctx.omens.add('putrefaction'); const r = E.applyMethod(it, method('poe2_desecrate_mid')); E.ctx.omens.delete('putrefaction'); return r; }),
-      tryPath('divine keeps fractured flag', null, it => { const id = it.mods[0].id; E.applyMethod(it, method('poe2_divine')); if (!it.mods.some(m => m.fractured && m.id === id)) it.mods.length = 0; return []; }),
+      tryPath('divine leaves a fractured mod alone', null, it => { const id = it.mods[0].id; const rolls = it.mods[0].rolls.join(); E.applyMethod(it, method('poe2_divine')); if (!it.mods.some(m => m.fractured && m.id === id && m.rolls.join() === rolls)) it.mods.length = 0; return []; }),
     ];
   }
   return out;

@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
+const imgs = [];
+p.on('response', r => { if (r.request().resourceType() === 'image') imgs.push(r.status() + ' ' + r.url()); });
+await p.goto('https://poe2db.tw/us/One_Hand_Swords', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await p.waitForTimeout(5000);
+const rows = await p.evaluate(() => [...document.querySelectorAll('img')].map(i => i.src + '  alt=' + i.alt).filter(s => /Art|2DItems|item/i.test(s)).slice(0, 14));
+console.log(rows.join('\n'));
+console.log('---responses'); console.log(imgs.filter(u => /Weapons|2DItems/.test(u)).slice(0, 8).join('\n'));
+await b.close();

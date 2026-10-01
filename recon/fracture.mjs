@@ -81,6 +81,18 @@ const R = await p.evaluate(async () => {
     for (let k = 0; k < 200; k++) { const c = structuredClone(it); E.applyMethod(c, { handler: 'poe2_chaos', properties: [], constraints: [] }); if (!c.mods.some(m => m.fractured && m.id === kept.id)) lost++; }
     t('F12 fractured mod survives Chaos on that item', lost === 0, `lost ${lost}/200`);
   }
+  // Divine Orb never rerolls a fractured mod (locked against currency), but still rerolls the others
+  {
+    let changedFractured = 0, changedOthers = 0;
+    for (let k = 0; k < 200; k++) {
+      const it = mk(4); it.mods[0].fractured = true;
+      const before = it.mods.map(m => m.rolls.join());
+      E.applyMethod(it, { handler: 'poe2_divine', properties: [], constraints: [] });
+      if (it.mods[0].rolls.join() !== before[0]) changedFractured++;
+      if (it.mods.slice(1).some((m, i) => m.rolls.join() !== before[i + 1])) changedOthers++;
+    }
+    t('F13 Divine never rerolls the fractured mod, still rerolls the rest', changedFractured === 0 && changedOthers > 100, `fractured changed ${changedFractured}/200, others changed ${changedOthers}/200`);
+  }
   return out;
 });
 for (const [k, v] of Object.entries(R)) console.log(k.padEnd(84), v);

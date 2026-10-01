@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1500, height: 1100 } });
+await p.goto('http://localhost:5173/?group=8&class=90&item=3644');
+await p.waitForSelector('#itemBox');
+await p.evaluate(() => { for (const i of [0, 30, 40, 50]) document.querySelectorAll('.fam:not(.ref) [data-add]')[i].click(); });
+const first = p.locator('#itemBox .mod').first();
+await first.scrollIntoViewIfNeeded(); await first.click({ button: 'right' }); await p.click('[data-ctx="fracture"]');
+const css = await p.$eval('#itemBox .mod.fractured', e => { const c = getComputedStyle(e); return { boxShadow: c.boxShadow, background: c.backgroundColor, outline: c.outlineColor, label: getComputedStyle(e.querySelector('.frac')).color }; });
+console.log(css);
+await p.locator('#tooltip').screenshot({ path: 'recon/fracture-colour.png' });
+await b.close();

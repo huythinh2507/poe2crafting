@@ -68,6 +68,9 @@ public sealed record DesecrationSettings(bool IncludeNormalMods = true, double L
 public sealed class CraftContext
 {
     public HashSet<string> Omens { get; } = new();
+
+    /// <summary>Pinned omens are not used up: they stay armed after each craft, so a combo (Chaos + Whittling) can be repeated.</summary>
+    public HashSet<string> Pinned { get; } = new();
     public DesecrationSettings Desecration { get; set; } = new();
     public Random Rng { get; }
 
@@ -80,18 +83,40 @@ public sealed class CraftContext
     {
         var omen = OmenCatalogue.Find(id);
         if (omen is null || omen.NotSimulated) return;
-        if (!Omens.Remove(id))
-        {
-            if (omen.Exclusive is not null)
-                foreach (var other in OmenCatalogue.All.Where(o => o.Exclusive == omen.Exclusive)) Omens.Remove(other.Id);
-            Omens.Add(id);
-        }
+        if (Omens.Remove(id)) { Pinned.Remove(id); return; }   // switching an omen off also unpins it
+        if (omen.Exclusive is not null)
+            foreach (var other in OmenCatalogue.All.Where(o => o.Exclusive == omen.Exclusive)) { Omens.Remove(other.Id); Pinned.Remove(other.Id); }
+        Omens.Add(id);
+    }
+
+    /// <summary>Pin an omen (arming it if needed); calling again unpins it, leaving it armed for one more use.</summary>
+    public void TogglePin(string id)
+    {
+        var omen = OmenCatalogue.Find(id);
+        if (omen is null || omen.NotSimulated) return;
+        if (Pinned.Remove(id)) return;
+        if (!Omens.Contains(id)) ToggleOmen(id);
+        Pinned.Add(id);
+    }
+
+    /// <summary>Use up one omen unless it is pinned.</summary>
+    public void SpendOmen(string id)
+    {
+        if (!Pinned.Contains(id)) Omens.Remove(id);
+    }
+
+    /// <summary>Disarm omens. <paramref name="keepPinned"/> leaves the pinned ones armed (what "Reset item" does).</summary>
+    public void ClearOmens(bool keepPinned = false)
+    {
+        foreach (var id in Omens.ToList())
+            if (!(keepPinned && Pinned.Contains(id))) Omens.Remove(id);
+        if (!keepPinned) Pinned.Clear();
     }
 
     /// <summary>Called after a successful (non-preview) craft: the currency used up the omens that target it.</summary>
     public void ConsumeOmens(string handler)
     {
         var baseHandler = CraftingEngine.BaseHandler(handler);
-        foreach (var omen in OmenCatalogue.All.Where(o => o.For == baseHandler)) Omens.Remove(omen.Id);
+        foreach (var omen in OmenCatalogue.All.Where(o => o.For == baseHandler)) SpendOmen(omen.Id);
     }
 }

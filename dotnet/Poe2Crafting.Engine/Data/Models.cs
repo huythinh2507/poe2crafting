@@ -57,12 +57,56 @@ public sealed class BaseItem
 
     [JsonPropertyName("sockets")] public int? Sockets { get; set; }
     [JsonPropertyName("image")] public string? Image { get; set; }
+
+    /// <summary>Base stats: physical_damage_min / max, critical_strike_chance (x100), attack_time (ms), range (x10), armour, evasion, energyshield, ward, block, spirit.</summary>
+    [JsonPropertyName("props")] public JsonElement Props { get; set; }   // an object, or `[]` / null when the base has none
+
+    /// <summary>A numeric base stat by name, or null when the base does not have it.</summary>
+    public double? Prop(string key) =>
+        Props.ValueKind == JsonValueKind.Object && Props.TryGetProperty(key, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : null;
+
+    /// <summary>Ids into the `skills` block: the skill a wand / staff / sceptre grants.</summary>
+    [JsonPropertyName("skills")] public List<int>? Skills { get; set; }
+}
+
+/// <summary>A game stat (the key is the stat index mods refer to): its id such as "local_attack_speed_+%".</summary>
+public sealed class StatDef
+{
+    [JsonPropertyName("id")] public string Id { get; set; } = "";
+}
+
+public sealed class SkillEntry
+{
+    [JsonPropertyName("id")] public int Id { get; set; }
+    [JsonPropertyName("item")] public int Item { get; set; }
+}
+
+/// <summary>One row of the item level to granted skill level table (`skills.scaling`).</summary>
+public sealed class SkillScaling
+{
+    [JsonPropertyName("item")] public int Item { get; set; }
+    [JsonPropertyName("gem")] public int Gem { get; set; }
+}
+
+public sealed class SkillBlock
+{
+    [JsonPropertyName("entries")] public List<SkillEntry> Entries { get; set; } = new();
+    [JsonPropertyName("scaling")] public List<SkillScaling> Scaling { get; set; } = new();
+}
+
+/// <summary>One base from public/data/weapon-bases.json (scraped from poe2db): its damage split into physical + elemental.</summary>
+public sealed class WeaponBaseRef
+{
+    [JsonPropertyName("damage")] public Dictionary<string, double[]?> Damage { get; set; } = new();
 }
 
 /// <summary>One stat line of a modifier, e.g. "+# to maximum Life" with a value range.</summary>
 public sealed class ModStat
 {
     [JsonPropertyName("label")] public int? Label { get; set; }
+
+    /// <summary>Which game stat this line is (see RawData.Stats): "local_attack_speed_+%", "base_maximum_life", ...</summary>
+    [JsonPropertyName("index")] public int? Index { get; set; }
 
     [JsonPropertyName("range")]
     [JsonConverter(typeof(RangeConverter))]
@@ -195,6 +239,10 @@ public sealed class RawData
     [JsonPropertyName("mods")] public ModBlock Mods { get; set; } = new();
     [JsonPropertyName("modgroups")] public Block<ModGroup> ModGroups { get; set; } = new();
     [JsonPropertyName("tags")] public Block<Tag> Tags { get; set; } = new();
+    [JsonPropertyName("skills")] public SkillBlock Skills { get; set; } = new();
+
+    /// <summary>stat index -> definition (only the id is read).</summary>
+    [JsonPropertyName("stats")] public Dictionary<string, StatDef> Stats { get; set; } = new();
     [JsonPropertyName("essences")] public EssenceBlock Essences { get; set; } = new();
     [JsonPropertyName("socketables")] public Block<Socketable> Socketables { get; set; } = new();
     [JsonPropertyName("methods")] public MethodsBlock Methods { get; set; } = new();

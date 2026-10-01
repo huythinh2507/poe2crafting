@@ -29,7 +29,24 @@ public sealed partial class CraftingEngine
         item.Socketed.Where(s => s.UnlocksPool is not null).Select(s => s.UnlocksPool!.Value).ToHashSet(),
         item.Socketed.LastOrDefault(s => s.TransformTo is not null)?.TransformTo);
 
-    /// <summary>How many prefixes / suffixes the item may have: 0 / 1 / 3 by rarity (+ meta-rune extras on rares).</summary>
+    /// <summary>Extra prefix / suffix slots from the base's own implicits (Dusk Ring: +1 prefix, -1 suffix; Penumbra +2 / -2; Gloam and Tenebrous the reverse).</summary>
+    public (int Prefix, int Suffix) ImplicitSlots(CraftItem item)
+    {
+        int prefix = 0, suffix = 0;
+        foreach (var instance in item.Implicits)
+        {
+            var mod = Db.Mods[instance.ModId];
+            for (var i = 0; i < mod.Stats.Count && i < instance.Rolls.Length; i++)
+            {
+                var id = Db.StatId(mod.Stats[i].Index);
+                if (id == "local_maximum_prefixes_allowed_+") prefix += (int)instance.Rolls[i];
+                else if (id == "local_maximum_suffixes_allowed_+") suffix += (int)instance.Rolls[i];
+            }
+        }
+        return (prefix, suffix);
+    }
+
+    /// <summary>How many prefixes / suffixes the item may have: 0 / 1 / 3 by rarity (+ base implicit and meta-rune extras on rares).</summary>
     public (int Prefix, int Suffix) MaxAffixes(CraftItem item)
     {
         var (prefix, suffix) = item.Rarity switch
@@ -38,7 +55,9 @@ public sealed partial class CraftingEngine
             Rarity.Rare => (3, 3),
             _ => (0, 0),
         };
-        return (prefix, item.Rarity == Rarity.Rare ? suffix + Bonus(item).ExtraSuffix : suffix);
+        if (item.Rarity != Rarity.Rare) return (prefix, suffix);
+        var implicitSlots = ImplicitSlots(item);
+        return (Math.Max(0, prefix + implicitSlots.Prefix), Math.Max(0, suffix + implicitSlots.Suffix + Bonus(item).ExtraSuffix));
     }
 
     /// <summary>Affix slots taken, counting unrevealed desecrated slots (they reserve a slot).</summary>

@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1500, height: 1100 } });
+await p.goto('http://localhost:5173/?group=8&class=90&item=3644');
+await p.waitForSelector('#itemBox');
+await p.locator('.cur:has-text("Orb of Alchemy")').click(); await p.click('#itemBox');
+await p.locator('.cur:has-text("Hinekora")').click(); await p.click('#itemBox');
+await p.click('[data-family]:has-text("Chaos Orb")'); await p.locator('.cur-wrap.open .cur-drop .cur').first().click();
+await p.locator('.foresee').scrollIntoViewIfNeeded();
+console.log(await p.$eval('.foresee', e => { const c = getComputedStyle(e); return { border: c.borderTopColor, bg: c.backgroundColor, title: getComputedStyle(e.querySelector('b')).color }; }));
+await p.locator('#tooltip').screenshot({ path: 'recon/foresee-colour.png' });
+await b.close();

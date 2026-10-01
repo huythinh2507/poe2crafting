@@ -16,10 +16,14 @@ public sealed partial class GameDatabase
     public IReadOnlyDictionary<int, ModGroup> Groups { get; }
     private readonly string[] _english;
 
-    private GameDatabase(RawData raw, string[] english)
+    /// <summary>poe2db's physical + elemental split of weapon base damage (optional: public/data/weapon-bases.json).</summary>
+    public IReadOnlyDictionary<string, WeaponBaseRef> WeaponBases { get; }
+
+    private GameDatabase(RawData raw, string[] english, Dictionary<string, WeaponBaseRef> weaponBases)
     {
         Raw = raw;
         _english = english;
+        WeaponBases = weaponBases;
         Classes = raw.Classes.Entries.ToDictionary(c => c.Id);
         Items = raw.Items.Entries.ToDictionary(i => i.Id);
         Mods = raw.Mods.Entries.ToDictionary(m => m.Id);
@@ -34,7 +38,11 @@ public sealed partial class GameDatabase
                   ?? throw new InvalidDataException("data.json is empty");
         var english = JsonSerializer.Deserialize<string[]>(File.ReadAllText(Path.Combine(dataDirectory, "english.json")), options)
                       ?? throw new InvalidDataException("english.json is empty");
-        return new GameDatabase(raw, english);
+        var weaponFile = Path.Combine(dataDirectory, "weapon-bases.json");
+        var weaponBases = File.Exists(weaponFile)
+            ? JsonSerializer.Deserialize<Dictionary<string, WeaponBaseRef>>(File.ReadAllText(weaponFile), options) ?? new()
+            : new Dictionary<string, WeaponBaseRef>();
+        return new GameDatabase(raw, english, weaponBases);
     }
 
     /// <summary>

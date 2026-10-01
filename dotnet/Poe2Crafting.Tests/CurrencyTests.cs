@@ -159,7 +159,7 @@ public class CurrencyTests
     }
 
     [Fact]
-    public void Divine_rerolls_values_but_keeps_flags_and_Blessed_only_touches_implicits()
+    public void Divine_rerolls_unfractured_values_never_a_fractured_mod_and_Blessed_only_touches_implicits()
     {
         var e = T.Engine(5);
         var item = T.FourMods(e);
@@ -171,8 +171,17 @@ public class CurrencyTests
         Assert.Equal(snapshot, item.Mods.Select(m => string.Join(",", m.Rolls)).ToList());
 
         e.Context.Omens.Clear();
-        for (var k = 0; k < 20; k++) e.ApplyMethod(item, T.M("poe2_divine"));
-        Assert.True(item.Mods[0].Fractured);                                        // the flag survives rerolls
+        var fracturedRolls = (double[])item.Mods[0].Rolls.Clone();
+        var rerolledSomewhere = false;
+        for (var k = 0; k < 40; k++)
+        {
+            var before = item.Mods.Skip(1).Select(m => string.Join(",", m.Rolls)).ToList();
+            e.ApplyMethod(item, T.M("poe2_divine"));
+            rerolledSomewhere |= !before.SequenceEqual(item.Mods.Skip(1).Select(m => string.Join(",", m.Rolls)));
+        }
+        Assert.True(item.Mods[0].Fractured);
+        Assert.Equal(fracturedRolls, item.Mods[0].Rolls);                           // locked: Divine never changes a fractured mod
+        Assert.True(rerolledSomewhere);                                             // while the other mods still reroll
     }
 
     // ---- Hinekora's Lock -------------------------------------------------------------------------
