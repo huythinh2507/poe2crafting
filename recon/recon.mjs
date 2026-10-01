@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
+const reqs = [];
+p.on('response', r => reqs.push(`${r.status()} ${r.request().resourceType()} ${r.url()}`));
+await p.goto('https://beta.craftofexile.com/?game=poe2', { waitUntil: 'networkidle', timeout: 60000 }).catch(e => console.log('goto', e.message));
+await p.waitForTimeout(3000);
+await p.screenshot({ path: 'recon/home.png', fullPage: true });
+fs.writeFileSync('recon/home.html', await p.content());
+fs.writeFileSync('recon/requests.txt', reqs.join('\n'));
+console.log(await p.title());
+await b.close();

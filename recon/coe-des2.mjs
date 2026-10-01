@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1600, height: 1100 } });
+await p.route(/(nitropay|doubleclick|googletag|google-analytics|amazon-adsystem|id5|criteo|adsrvr|privacymanager|scalibur|hadronid|rlcdn|fastclick|ad\.gt)/, r => r.abort());
+await p.goto('https://beta.craftofexile.com/?game=poe2&group=1&class=4&item=3408', { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(3500);
+await p.getByText('Orb of Alchemy', { exact: true }).first().click();
+await p.getByText('Desecrate', { exact: true }).first().click();
+await p.waitForTimeout(800);
+await p.screenshot({ path: 'recon/coe2.png' });
+const names = await p.$$eval('[class*=method] button, .methods *', els => els.map(e => e.innerText).filter(t => /bone|rib|jaw|collar/i.test(t)).slice(0, 20));
+console.log(names);
+await b.close();

@@ -1,0 +1,11 @@
+node_modules/
+# raw downloads; public/data holds the converted copies the app loads (re-create with npm run fetch-data && npm run prepare-data)
+/data/
+# scratch output from recon / test runs
+recon/*.png
+recon/*.html
+recon/*.txt
+recon/*.log
+# one-off patch scripts used while building
+scripts/patch_*.py
+scripts/fix_*.py

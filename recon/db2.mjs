@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1600, height: 1100 } });
+await p.goto('https://poe2db.tw/us/Body_Armours_str', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await p.waitForTimeout(4000);
+const t = await p.evaluate(() => document.body.innerText);
+fs.writeFileSync('recon/poe2db-ba.txt', t);
+console.log(t.length);
+await b.close();

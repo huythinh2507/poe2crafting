@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
+await p.route(/(nitropay|doubleclick|googletag|google-analytics|amazon-adsystem|id5|criteo|adsrvr|privacymanager|scalibur|hadronid|rlcdn|fastclick|ad\.gt)/, r => r.abort());
+await p.goto('https://beta.craftofexile.com/?game=poe2', { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(3000);
+await p.getByText('Body Armour', { exact: true }).first().click();
+await p.waitForTimeout(2500);
+await p.screenshot({ path: 'recon/s1.png' });
+fs.writeFileSync('recon/s1.html', await p.content());
+console.log(p.url());
+await b.close();

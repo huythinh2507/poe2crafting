@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1600, height: 1100 } });
+await p.route(/(nitropay|doubleclick|googletag|google-analytics|amazon-adsystem|id5|criteo|adsrvr|privacymanager|scalibur|hadronid|rlcdn|fastclick|ad\.gt)/, r => r.abort());
+const imgs = [];
+p.on('response', r => { if (r.request().resourceType() === 'image') imgs.push(r.url()); });
+await p.goto('https://beta.craftofexile.com/?game=poe2&group=1&class=4&item=3408', { waitUntil: 'domcontentloaded' });
+await p.waitForTimeout(4000);
+console.log(imgs.filter(u => !/shared\/(ui|categories|images)|lflg/.test(u)).slice(0, 40).join('\n'));
+const css = await p.evaluate(() => [...document.querySelectorAll('[class*=cursor], .cursor, body')].slice(0,3).map(e => e.className + ' ' + getComputedStyle(e).cursor).join(' | '));
+console.log('cursor css:', css);
+await b.close();

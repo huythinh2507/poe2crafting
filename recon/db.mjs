@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+import fs from 'fs';
+const b = await chromium.launch();
+const p = await b.newPage();
+await p.goto('https://poe2db.tw/us/Stackable_Currency', { waitUntil: 'domcontentloaded', timeout: 60000 });
+await p.waitForTimeout(3000);
+const t = await p.evaluate(() => document.body.innerText);
+fs.writeFileSync('recon/poe2db.txt', t);
+console.log(t.length);
+await b.close();
