@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
+const errs = [], bad = [];
+p.on('pageerror', e => errs.push(e.message));
+p.on('response', r => { if (!r.ok()) bad.push(r.status() + ' ' + r.url()); });
+await p.goto('https://huythinh2507.github.io/poe2crafting/?group=1&class=4&item=3408');
+await p.waitForSelector('#itemBox', { timeout: 30000 });
+await p.click('[data-family] >> nth=0'); await p.click('.cur-wrap.open .cur-drop .cur >> nth=0');
+await p.click('#itemBox');
+console.log('crafted:', await p.evaluate(() => window.__craft.S.item.rarity), '| icons:', await p.$$eval('.cur-icon', is => is.filter(i => i.naturalWidth > 0).length));
+console.log('failed requests:', bad.length ? bad : 'none', '| errors:', errs.length ? errs : 'none');
+await b.close();

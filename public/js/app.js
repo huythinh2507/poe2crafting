@@ -647,7 +647,8 @@ document.addEventListener('change', e => {
 document.addEventListener('pointermove', e => {
   const el = $('#cursorIcon');
   if (!el) return;
-  if (S.method && e.target.closest('#itemBox')) {
+  // Undo / Reset live inside the item box: no currency in hand over them, so they stay clickable
+  if (S.method && e.target.closest('#itemBox') && !e.target.closest('.item-actions')) {
     el.hidden = false;
     el.style.transform = `translate(${e.clientX + 16}px, ${e.clientY + 16}px)`;
   } else el.hidden = true;

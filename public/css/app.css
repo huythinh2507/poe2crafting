@@ -175,5 +175,6 @@ h2 { margin: 22px 0 10px; font: bold 17px "Montserrat", system-ui, sans-serif; c
 #cursorIcon img { width: 48px; height: 48px; object-fit: contain; filter: drop-shadow(0 2px 4px #000); }
 #cursorIcon img[hidden] { display: none; }
 #cursorIcon span { font-size: 13px; color: #fff; white-space: nowrap; }
-.item.hold, .item.hold * { cursor: none; }
+.item.hold, .item.hold * { cursor: crosshair; }  /* keep the real pointer visible: the icon floats beside it */
+.item.hold .item-actions, .item.hold .item-actions * { cursor: pointer; }
 .item.apply:hover { box-shadow: 0 0 0 2px var(--gold), 0 0 24px #c8a46a66; }
