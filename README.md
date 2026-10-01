@@ -2,6 +2,8 @@
 
 Local Path of Exile 2 crafting emulator, inspired by Craft of Exile. Vanilla JS, no build step.
 
+**Live demo: https://huythinh2507.github.io/poe2crafting/**
+
 ```
 npm install        # only needed for the Playwright test scripts
 npm start          # http://localhost:5173
