@@ -68,20 +68,24 @@ public class FractureTests
         Assert.All(hits, n => Assert.InRange(n / (double)runs, 0.22, 0.28));
     }
 
+    // Only the UNREVEALED slot is excluded; once revealed, a desecrated mod is an ordinary fracture candidate.
     [Fact]
-    public void A_revealed_desecrated_mod_counts_but_can_never_be_fractured()
+    public void A_revealed_desecrated_mod_can_be_fractured_like_any_other()
     {
         var e = T.Engine(3);
+        const int runs = 2000;
+        var desecratedHits = 0;
         var hits = new HashSet<int>();
-        for (var k = 0; k < 1500; k++)
+        for (var k = 0; k < runs; k++)
         {
             var item = Rare(e, 3, revealedDesecrated: 1);
             Assert.True(Usable(e, item));
             var chosen = e.ApplyMethod(item, Fracturing)![0].Mod!;
-            Assert.False(chosen.Desecrated);
+            if (chosen.Desecrated) desecratedHits++;
             hits.Add(item.Mods.IndexOf(chosen));
         }
-        Assert.Equal(3, hits.Count);
+        Assert.Equal(4, hits.Count);                                   // all four mods are candidates
+        Assert.InRange(desecratedHits / (double)runs, 0.21, 0.29);     // about one in four
     }
 
     [Fact]

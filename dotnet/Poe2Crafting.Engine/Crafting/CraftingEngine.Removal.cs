@@ -19,12 +19,13 @@ public sealed partial class CraftingEngine
     private static IEnumerable<ModInstance> Removable(CraftItem item) => item.Mods.Where(m => !m.Fractured);
 
     /// <summary>
-    /// The mods a Fracturing Orb can lock. Desecrated mods cannot be fractured, but an UNREVEALED desecrated
-    /// slot still counts toward the 4-modifier minimum, so 3 normal mods + 1 desecrated gives each normal
-    /// mod a 1-in-3 chance instead of 1-in-4.
+    /// The mods a Fracturing Orb can lock: every mod that is not already fractured, including a desecrated mod once it
+    /// has been revealed. An UNREVEALED desecrated slot is the exception: it counts toward the 4-modifier minimum but
+    /// cannot be fractured, so 3 mods + 1 unrevealed slot gives each mod a 1-in-3 chance instead of 1-in-4.
+    /// (Guides only describe the unrevealed slot; none says a revealed desecrated mod is excluded.)
     /// </summary>
     public IReadOnlyList<ModInstance> FractureCandidates(CraftItem item) =>
-        item.Mods.Where(m => !m.Fractured && !m.Desecrated).ToList();
+        item.Mods.Where(m => !m.Fractured).ToList();
 
     /// <summary>
     /// Everything a removal could hit once the filters are applied. Whittling then keeps only the

@@ -5,7 +5,7 @@ const errs = []; p.on('pageerror', e => errs.push(e.message));
 await p.goto('http://localhost:5173/?group=8&class=90&item=3644');
 await p.waitForSelector('#itemBox');
 const snap = () => p.evaluate(async () => { const c = window.__craft, E = await import('/js/engine.js'); return `rarity=${c.S.item.rarity} held=${c.S.method ? c.S.method.handler : 'none'} omens=[${[...E.ctx.omens]}] cursorIcon=${document.querySelector('#cursorIcon').hidden ? 'hidden' : 'visible'} activeChips=${document.querySelectorAll('[data-omen].active').length} activeCurrency=${document.querySelectorAll('.cur.active').length}`; });
-for (const sel of ['#resetItem', '#reset']) {
+for (const sel of ['#resetItem']) { // the top Reset clears the whole selection: see reset-all.mjs
   await p.click('[data-tab="Currencies"]');
   await p.locator('.cur:has-text("Orb of Alchemy")').click(); await p.click('#itemBox');
   await p.click('[data-family]:has-text("Chaos Orb")'); await p.locator('.cur-wrap.open .cur-drop .cur').first().click();

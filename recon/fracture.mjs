@@ -53,7 +53,7 @@ const R = await p.evaluate(async () => {
     const share = [...hits.values()].map(v => v / N);
     t('F7 4 normal mods: each ~25%', hits.size === 4 && share.every(s => s > 0.22 && s < 0.28), share.map(s => (s * 100).toFixed(1) + '%').join(' / '));
   }
-  // revealed desecrated mod: counts, cannot be fractured
+  // revealed desecrated mod: it is a normal fracture candidate (only the UNREVEALED slot is excluded)
   {
     let hitDesecrated = 0; const hits = new Map(); const N = 2000;
     for (let k = 0; k < N; k++) {
@@ -62,7 +62,8 @@ const R = await p.evaluate(async () => {
       if (ch[0].mod.desecrated) hitDesecrated++;
       const i = it.mods.indexOf(ch[0].mod); hits.set(i, (hits.get(i) || 0) + 1);
     }
-    t('F8 3 mods + 1 revealed desecrated: desecrated never fractured, 3-way split', hitDesecrated === 0 && hits.size === 3, `desecrated hit ${hitDesecrated}, split ${[...hits.values()].map(v => (v / N * 100).toFixed(0) + '%').join('/')}`);
+    const share = hitDesecrated / N;
+    t('F8 3 mods + 1 REVEALED desecrated: 4 candidates, desecrated one ~25%', hits.size === 4 && share > 0.21 && share < 0.29, `desecrated hit ${(share * 100).toFixed(1)}%, split ${[...hits.values()].map(v => (v / N * 100).toFixed(0) + '%').join('/')}`);
   }
   // nothing fracturable -> refuse
   {
