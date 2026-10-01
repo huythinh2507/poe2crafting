@@ -85,6 +85,10 @@ public sealed class CraftItem
     public List<UnrevealedSlot> Unrevealed { get; set; } = new();
 
     public int Quality { get; set; }
+
+    /// <summary>Jewellery catalyst quality (rings, amulets): one tag, replaced when another catalyst is used. Null when none.</summary>
+    public CatalystQuality? Catalyst { get; set; }
+
     public int Sockets { get; set; }
     public List<SocketedAugment> Socketed { get; set; } = new();
 
@@ -109,7 +113,7 @@ public sealed class CraftItem
         var copy = other.Clone();
         BaseId = copy.BaseId; ClassId = copy.ClassId; ItemLevel = copy.ItemLevel; Rarity = copy.Rarity;
         Implicits = copy.Implicits; Mods = copy.Mods; Unrevealed = copy.Unrevealed;
-        Quality = copy.Quality; Sockets = copy.Sockets; Socketed = copy.Socketed;
+        Quality = copy.Quality; Catalyst = copy.Catalyst; Sockets = copy.Sockets; Socketed = copy.Socketed;
         Corrupted = copy.Corrupted; Corruption = copy.Corruption; Locked = copy.Locked;
         ForesightCache.Clear();
     }
@@ -120,7 +124,7 @@ public sealed class CraftItem
         Implicits = Implicits.Select(m => m.Clone()).ToList(),
         Mods = Mods.Select(m => m.Clone()).ToList(),
         Unrevealed = Unrevealed.Select(u => u.Clone()).ToList(),
-        Quality = Quality, Sockets = Sockets,
+        Quality = Quality, Catalyst = Catalyst, Sockets = Sockets,
         Socketed = Socketed.Select(s => s.Clone()).ToList(),
         Corrupted = Corrupted,
         Corruption = Corruption.Select(m => m.Clone()).ToList(),
@@ -140,3 +144,6 @@ public sealed record Change(ChangeOp Op, ModInstance? Mod = null, string? Text =
     public static Change Fractured(ModInstance m) => new(ChangeOp.Fracture, m);
     public static Change NoteOf(string text) => new(ChangeOp.Note, null, text);
 }
+
+/// <summary>Catalyst quality on a ring or amulet: scales every modifier carrying <paramref name="Tag"/> (e.g. "life").</summary>
+public sealed record CatalystQuality(string Tag, int Quality);

@@ -34,7 +34,7 @@ export const OMENS = [
   { id: 'exalt_prefix', name: 'Omen of Sinistral Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds only prefix modifiers.', excl: 'exalt' },
   { id: 'exalt_suffix', name: 'Omen of Dextral Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds only suffix modifiers.', excl: 'exalt' },
   { id: 'exalt_homog', name: 'Omen of Homogenising Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb adds a modifier of the same type (shares a tag) as an existing modifier.' },
-  { id: 'exalt_catalyst', name: 'Omen of Catalysing Exaltation', for: 'poe2_exalted', todo: true, hint: 'Needs the catalyst system, not simulated yet.' },
+  { id: 'exalt_catalyst', name: 'Omen of Catalysing Exaltation', for: 'poe2_exalted', hint: 'Exalted Orb consumes all catalyst quality: modifiers with the catalyst\'s tag become more likely (weight x (1 + 0.2 x quality)).' },
   // Regal Orb
   { id: 'regal_prefix', name: 'Omen of Sinistral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a prefix.', excl: 'regal', retired: true },
   { id: 'regal_suffix', name: 'Omen of Dextral Coronation', for: 'poe2_regal', hint: 'Regal Orb adds only a suffix.', excl: 'regal', retired: true },
@@ -109,6 +109,7 @@ export function newItem(base, ilvl = 100) {
     mods: [],
     unrevealed: [],   // desecrated slots waiting for the Well of Souls: [{ affix, minLevel }]
     quality: 0,
+    catalyst: null,   // jewellery catalyst quality: { tag: 'life', quality: 12 } (replaces the previous type when another catalyst is used)
     sockets: base.sockets || 0,
     socketed: [],     // [{ item, name, lines, influence?, suffix?, crafted?, transform? }]
     corrupted: false,
@@ -201,14 +202,21 @@ export function eligibleMods(item, opts = {}) {
     const have = new Set(item.mods.flatMap(m => groupTags(DB.mods.get(m.id))));
     rollable = rollable.filter(e => groupTags(e.mod).some(t => have.has(t)));
   }
+  if (opts.positives) { // weight multipliers for mods carrying a tag (Omen of Catalysing Exaltation)
+    rollable = rollable.map(e => {
+      const f = groupTags(e.mod).reduce((s, t) => s + (opts.positives[t] || 0), 0);
+      return f > 0 ? { ...e, weight: e.weight * f } : e;
+    });
+  }
   return applyMinLevel(rollable, opts.minLevel);
 }
 const groupTags = mod => (DB.groups.get(mod.group)?.tags || []).filter(t => t !== 0);
 
 /** Options for adding a mod, from the active omens of the currency being used. */
-function addOpts(base, handler) {
+function addOpts(base, handler, item) {
   const o = ctx.omens, a = { ...base };
   if (handler === 'poe2_exalted') {
+    if (o.has('exalt_catalyst') && item?.catalyst?.quality > 0) a.positives = catalystWeights(item.catalyst);
     if (o.has('exalt_prefix')) a.affix = 'prefix';
     if (o.has('exalt_suffix')) a.affix = 'suffix';
     if (o.has('exalt_homog')) a.homog = true;
@@ -346,6 +354,8 @@ const CONSTRAINTS = {
   armour_quality_base: isArmour,
   flask_base: i => groupOf(i) === 9,
   ring_or_amulet_base: i => i.classId === 33 || i.classId === 34,
+  catalyst_base: i => !i.corrupted && (i.classId === 33 || i.classId === 34 || i.classId === 105), // rings, amulets, Grasping Mail
+  refined_catalyst_base: i => !i.corrupted && groupOf(i) === 10,                                 // jewels
   not_maximum_quality: i => i.quality < MAX_QUALITY,
   socketable_base: canSocket,
   not_maximum_sockets: i => i.sockets < (baseOf(i).sockets || 0),
@@ -434,6 +444,49 @@ const addQuality = (item, cap = MAX_QUALITY) => {
   item.quality = Math.min(cap, item.quality + qualityGain(item));
   return note(`Quality +${item.quality - before}% (now ${item.quality}%)`);
 };
+
+// ---- Catalysts (rings, amulets; Refined ones on jewels) ----
+// Quality is tied to one tag. It scales the rolled value of every mod carrying that tag (implicits too), and a different
+// catalyst replaces it instead of adding. Each use gives round(30 x e^(-ilvl/30) - 0.3) clamped to 1-20 (a 1 becomes 2
+// one time in five): a rarely-more-than-1% at high item level. Cap 20%, plus a Breach Ring's "+x% to Maximum Quality".
+// Omen of Catalysing Exaltation turns the quality into a weight multiplier on that tag for the next Exalted Orb.
+// Formulas are the ones craftofexile.com uses (read from its calculator); GGG does not publish them.
+export const CATALYSTS = {
+  adaptive: 'attribute', carapace: 'defences', chayula: 'chaos', esh: 'lightning', flesh: 'life', neural: 'mana',
+  necrotic: 'minion', reaver: 'attack', sibilant: 'caster', skittering: 'speed', tul: 'cold', uulnetol: 'physical', xoph: 'fire',
+};
+export const catalystTagId = key => DB.raw.tags.entries.find(t => t.key === key)?.id;
+export const catalystGain = ilvl => {
+  const n = Math.round(Math.max(1, Math.min(30 * Math.exp(-ilvl / 30) - 0.3, 20)));
+  return n === 1 && Math.random() < 0.2 ? 2 : n;
+};
+export const catalystCap = item => MAX_QUALITY + localStatOf(item, 'local_maximum_quality_+');
+const localStatOf = (item, statId) => {
+  let total = 0;
+  for (const inst of [...item.implicits, ...item.mods]) {
+    DB.mods.get(inst.id).stats.forEach((st, i) => { if (DB.raw.stats[st.index]?.id === statId) total += inst.rolls[i] || 0; });
+  }
+  return total;
+};
+/** Weight multiplier the omen gives mods with the catalyst's tag: 1 + 0.2 per % up to 20, then 0.12 per % beyond (Breach Rings). */
+export function catalystFactor(quality) {
+  const over = quality - MAX_QUALITY;
+  return over > 0 ? 1 + 0.12 * over + 0.2 * MAX_QUALITY : 1 + 0.2 * quality;
+}
+const catalystWeights = c => ({ [catalystTagId(c.tag)]: catalystFactor(c.quality) });
+function useCatalyst(item, tag) {
+  if (item.catalyst && item.catalyst.tag !== tag) item.catalyst = null; // a different type wipes the old quality
+  const before = item.catalyst?.quality || 0;
+  const quality = Math.min(catalystCap(item), before + catalystGain(item.ilvl));
+  item.catalyst = { tag, quality };
+  return note(`${tag[0].toUpperCase() + tag.slice(1)} catalyst quality +${quality - before}% (now ${quality}%)`);
+}
+/** Rolled value of a mod stat as the item shows it: scaled by catalyst quality when the mod carries the catalyst's tag. */
+export function catalystScaled(item, mod, value) {
+  const c = item?.catalyst;
+  if (!c || !c.quality || !groupTags(mod).includes(catalystTagId(c.tag))) return value;
+  return Math.round(value * (100 + c.quality) / 100);
+}
 
 // ---- Essences (incl. Alloys) ----
 // Essence mod for a class: highest tier the item level allows.
@@ -642,7 +695,7 @@ export function revealMod(item, idx, entry) {
 const HANDLERS = {
   poe2_transmutation: (i, o) => { i.rarity = 'magic'; return added(addRandom(i, o)); },
   poe2_augmentation: (i, o) => added(addRandom(i, o)),
-  poe2_regal: (i, o) => { i.rarity = 'rare'; return addMany(i, 1, addOpts(o, 'poe2_regal')); },
+  poe2_regal: (i, o) => { i.rarity = 'rare'; return addMany(i, 1, addOpts(o, 'poe2_regal', i)); },
   poe2_alchemy: (i, o) => {
     i.rarity = 'rare'; i.mods = []; i.unrevealed = [];
     // Sinistral / Dextral Alchemy: three of one affix, one of the other
@@ -658,7 +711,12 @@ const HANDLERS = {
     const out = [rem, ...added(addRandom(i, o))];
     return out;
   },
-  poe2_exalted: (i, o) => addMany(i, ctx.omens.has('exalt_two') ? 2 : 1, addOpts(o, 'poe2_exalted')),
+  poe2_exalted: (i, o) => {
+    const opts = addOpts(o, 'poe2_exalted', i);
+    const out = addMany(i, ctx.omens.has('exalt_two') ? 2 : 1, opts);
+    if (out && opts.positives) i.catalyst = null; // the omen consumes all the catalyst quality
+    return out;
+  },
   poe2_annulment: i => {
     const { count, ...opts } = removalOpts('poe2_annulment');
     const out = [];
@@ -686,6 +744,10 @@ const HANDLERS = {
     if (Math.random() < INFUSER_CORRUPT_CHANCE) { i.corrupted = true; out.push(...note('Corrupted')); }
     return out;
   },
+  ...Object.fromEntries(Object.entries(CATALYSTS).flatMap(([name, tag]) => [
+    ['poe2_catalyst_' + name, i => useCatalyst(i, tag)],
+    ['poe2_refined_catalyst_' + name, i => useCatalyst(i, tag)],
+  ])),
   blacksmith_whetstone: i => addQuality(i),
   arcanist_etcher: i => addQuality(i),
   armourer_scrap: i => addQuality(i),
@@ -738,7 +800,7 @@ export function applyMethod(item, method) {
   if (!fn) return null;
   const opts = { minLevel: minLevelOf(method) };
   const needsMod = ['poe2_transmutation', 'poe2_augmentation', 'poe2_regal', 'poe2_exalted', 'poe2_alchemy', 'poe2_chaos'].includes(handler);
-  if (needsMod && !eligibleMods(probeRarity(item, handler), addOpts(opts, handler)).length) return null;
+  if (needsMod && !eligibleMods(probeRarity(item, handler), addOpts(opts, handler, item)).length) return null;
   const out = fn(item, opts, method);
   return out && out.filter(c => c.mod || c.text);
 }
@@ -755,7 +817,7 @@ export function foresee(item, method) {
 export function addChances(item, method) {
   if (method && ['poe2_essence', 'poe2_socketable'].includes(method.handler)) return { total: 0, map: new Map() };
   const handler = method ? baseHandler(method.handler) : null;
-  const list = eligibleMods(probeRarity(item, handler), addOpts({ minLevel: minLevelOf(method) }, handler));
+  const list = eligibleMods(probeRarity(item, handler), addOpts({ minLevel: minLevelOf(method) }, handler, item));
   const total = list.reduce((s, e) => s + e.weight, 0);
   return { total, map: new Map(list.map(e => [e.mod.id, e.weight / total])) };
 }
@@ -918,13 +980,14 @@ export function grantedSkillLevel(ilvl) {
 export const modTemplate = mod => [...new Set(mod.stats.map(s => DB.text(s.label)))].join(' / ');
 
 /** Text lines for a mod. rolls omitted = show full ranges (pool view). */
-export function modLines(mod, rolls) {
+export function modLines(mod, rolls, item) {
   const labels = mod.stats.map(s => DB.text(s.label));
+  const sc = v => catalystScaled(item, mod, v);   // catalyst quality scales the value and its range
   const fmt = (s, i) => {
-    const [a, b] = s.range;
+    const [a, b] = s.range.map(sc);
     const v = rolls ? rolls[i] : null;
     if (v == null) return a === b ? fmtNum(a) : `(${fmtNum(a)}-${fmtNum(b)})`;
-    return a === b ? fmtNum(v) : `${fmtNum(v)}(${fmtNum(a)}-${fmtNum(b)})`;
+    return a === b ? fmtNum(sc(v)) : `${fmtNum(sc(v))}(${fmtNum(a)}-${fmtNum(b)})`;
   };
   // "# to #" style: one label shared by N stats
   const label0 = labels[0] || '';

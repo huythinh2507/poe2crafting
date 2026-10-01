@@ -29,7 +29,7 @@ public static class OmenCatalogue
         new("exalt_prefix", "Omen of Sinistral Exaltation", "poe2_exalted", "Exalted Orb adds only prefix modifiers.", "exalt"),
         new("exalt_suffix", "Omen of Dextral Exaltation", "poe2_exalted", "Exalted Orb adds only suffix modifiers.", "exalt"),
         new("exalt_homog", "Omen of Homogenising Exaltation", "poe2_exalted", "Exalted Orb adds a modifier of the same type (shares a tag) as an existing modifier."),
-        new("exalt_catalyst", "Omen of Catalysing Exaltation", "poe2_exalted", "Needs the catalyst system, not simulated yet.", NotSimulated: true),
+        new("exalt_catalyst", "Omen of Catalysing Exaltation", "poe2_exalted", "Exalted Orb consumes all catalyst quality: modifiers with the catalyst's tag become more likely (weight x (1 + 0.2 x quality))."),
         // Regal Orb
         new("regal_prefix", "Omen of Sinistral Coronation", "poe2_regal", "Regal Orb adds only a prefix.", "regal", Retired: true),
         new("regal_suffix", "Omen of Dextral Coronation", "poe2_regal", "Regal Orb adds only a suffix.", "regal", Retired: true),
