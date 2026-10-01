@@ -1,0 +1,31 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1500, height: 1200 } });
+const errs = []; const bad = [];
+p.on('pageerror', e => errs.push(e.message));
+p.on('response', r => { if (/assets\/items\/Weapons/.test(r.url()) && !r.ok()) bad.push(r.status() + ' ' + r.url()); });
+await p.goto('http://localhost:5173/');
+await p.waitForFunction(() => window.__craft);
+// every weapon base image must load
+const res = await p.evaluate(async () => {
+  const D = await import('/js/data.js'); const { DB } = D;
+  const classes = [...(DB.groupClasses[7] || []), ...(DB.groupClasses[8] || [])];
+  const bases = [...DB.items.values()].filter(i => classes.includes(i.class) && i.domain === 1 && i.drop);
+  let ok = 0; const fail = [];
+  await Promise.all(bases.map(b => new Promise(res => { const im = new Image(); im.onload = () => { ok++; res(); }; im.onerror = () => { fail.push(DB.text(b.label) + ' ' + b.image); res(); }; im.src = 'assets/items/' + b.image.replace('Art/2DItems/', '') + '.webp'; })));
+  return { total: bases.length, ok, fail: fail.slice(0, 5) };
+});
+console.log('weapon base images:', res);
+await p.goto('http://localhost:5173/?group=7&class=54');
+await p.waitForSelector('#bases .base');
+await p.waitForTimeout(600);
+console.log('picker thumbs loaded:', await p.$$eval('.base-thumb-img', is => is.filter(i => i.naturalWidth > 0).length), '/', await p.locator('.base').count());
+await p.screenshot({ path: 'recon/weapon-picker.png', fullPage: false });
+await p.locator('.base').nth(3).click();
+await p.waitForSelector('#itemBox');
+await p.locator('#itemBox').scrollIntoViewIfNeeded();
+await p.waitForTimeout(400);
+console.log('tooltip art loaded:', await p.$eval('.item-art', i => i.naturalWidth > 0), '| chip art:', await p.$eval('.chip-art', i => i.naturalWidth > 0));
+await p.screenshot({ path: 'recon/weapon-item.png' });
+console.log('404s:', bad.length ? bad : 'none', '| errors:', errs.length ? errs : 'none');
+await b.close();

@@ -94,6 +94,13 @@ export function poolEntry(classId, modId) {
   return poolFor(classId, influenceOf(mod)).find(e => e.mod.id === modId) || null;
 }
 
+/**
+ * Essence data (and socketables) are keyed by the item *class enum* (Wand, One Hand Sword, Body Armour,
+ * Talisman, ...), not by our class ids. Several enums collide with class ids, so always convert.
+ */
+export const classEnum = classId => DB.classes.get(classId)?.class;
+export const essenceModIds = (essenceId, classId) => DB.raw.essences.byessences[essenceId]?.[classEnum(classId)] || [];
+
 // Vaal corruption enchants (modgroup type 5) available to a class, with weights.
 export function corruptionPool(classId) {
   const cm = DB.classmods[classId] || {};

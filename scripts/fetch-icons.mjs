@@ -15,6 +15,10 @@ for (const e of raw.socketables.entries) ids.add(e.item);
 for (const e of raw.methods.omens.entries) ids.add(e.item);
 for (const i of raw.items.entries) if (/Hinekora/i.test(i.key)) ids.add(i.id);
 
+// base item art for weapons: one-handed (group 7) and two-handed (group 8) classes
+const weaponClasses = new Set([...(raw.classes.bygroup[7] || []), ...(raw.classes.bygroup[8] || [])]);
+for (const i of raw.items.entries) if (weaponClasses.has(i.class) && i.domain === 1 && i.drop) ids.add(i.id);
+
 const images = new Set();
 for (const id of ids) { const img = itemById.get(id)?.image; if (img) images.add(img); }
 console.log(`${ids.size} items, ${images.size} unique images`);
@@ -41,23 +45,32 @@ for (const extra of ['Currency/HinekorasLock']) if (!fs.existsSync(out(extra))) 
 console.log(`${todo2.length} to (re)download`);
 
 let ok = 0, miss = [];
-const queue = [...todo2];
-await Promise.all(Array.from({ length: 10 }, async () => {
-  while (queue.length) {
-    const rel = queue.shift();
-    let done = false;
-    for (const url of hosts(rel)) {
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const HEADERS = { 'User-Agent': 'Mozilla/5.0 (poe2crafting icon fetch)', Accept: 'image/webp,image/*' };
+// poe2db first (it has item art for everything, CoE only has currencies), CoE as fallback
+const order = rel => [hosts(rel)[1], hosts(rel)[0]];
+async function grab(rel) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    for (const url of order(rel)) {
       try {
-        const r = await fetch(url);
+        const r = await fetch(url, { headers: HEADERS });
         if (!r.ok) continue;
         const buf = Buffer.from(await r.arrayBuffer());
         if (!isWebp(buf)) continue;
         fs.mkdirSync(path.dirname(out(rel)), { recursive: true });
         fs.writeFileSync(out(rel), buf);
-        ok++; done = true; break;
-      } catch { /* try next host */ }
+        return true;
+      } catch { /* retry */ }
     }
-    if (!done) miss.push(rel);
+    await sleep(400 * (attempt + 1));
+  }
+  return false;
+}
+const queue = [...todo2];
+await Promise.all(Array.from({ length: 4 }, async () => {
+  while (queue.length) {
+    const rel = queue.shift();
+    if (await grab(rel)) ok++; else miss.push(rel);
   }
 }));
-console.log(`downloaded ${ok}, still missing ${miss.length}`, miss);
+console.log(`downloaded ${ok}, still missing ${miss.length}`, miss.slice(0, 8));

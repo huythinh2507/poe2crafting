@@ -1,0 +1,15 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1400, height: 1100 } });
+const errs = []; p.on('pageerror', e => errs.push(e.message));
+await p.goto('http://localhost:5173/?group=1&class=4&item=3408');
+await p.waitForSelector('#itemBox');
+await p.click('[data-family] >> nth=0'); await p.click('.cur-wrap.open .cur-drop .cur:has-text("Perfect")');
+console.log('note:', (await p.innerText('.min-note')).replace(/\n/g, ' '));
+console.log('greyed tiers:', await p.locator('.tier.below').count(), '| tiers with a %:', await p.$$eval('.tier .pct', ps => ps.filter(x => /%/.test(x.innerText)).length));
+console.log('sample greyed:', await p.$eval('.tier.below', e => e.innerText.replace(/\n/g, ' | ') + ' [' + e.title + ']'));
+await p.click('[data-family] >> nth=0'); await p.click('.cur-wrap.open .cur-drop .cur >> nth=0');
+console.log('basic orb -> greyed tiers:', await p.locator('.tier.below').count(), '| note present:', await p.locator('.min-note').count());
+await p.screenshot({ path: 'recon/below.png' });
+console.log(errs.join('\n') || 'no errors');
+await b.close();
