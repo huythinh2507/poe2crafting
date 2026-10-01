@@ -1,6 +1,6 @@
 import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
-  ctx, OMENS, toggleOmen, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
+import { newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
+  ctx, OMENS, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -34,7 +34,7 @@ function methodCatalogue() {
     }
   };
   for (const m of DB.raw.methods.crafting) {
-    if (!['Currencies', 'Generate', 'Desecrate'].includes(m.label)) continue;
+    if (!['Currencies', 'Desecrate'].includes(m.label)) continue; // the Generate tab (spawn a Normal/Magic/Rare item) was removed from the UI
     walk(m.elements, m.label, m.constraints || [], null);
   }
   // The tablet-only Vaal Orb duplicates the normal one on equipment.
@@ -62,11 +62,9 @@ const iconPath = id => {
   const img = DB.items.get(id)?.image;
   return img ? 'assets/items/' + img.replace(/^Art\/2DItems\//, '') + '.webp' : null;
 };
-/** Base item art (weapons so far), sized by the base's inventory footprint. */
+/** Base item art (scripts/fetch-weapon-art.mjs + fetch-base-art.mjs); a missing file just removes the <img>. */
 const baseArt = (b, cls = 'base-art') => {
-  // only weapon bases (groups 7 / 8) have art downloaded so far; skip the rest to avoid 404s
-  const hasArt = [7, 8].includes(DB.classes.get(b.class)?.group);
-  const src = b.image && hasArt ? 'assets/items/' + b.image.replace(/^Art\/2DItems\//, '') + '.webp' : null;
+  const src = b.image ? 'assets/items/' + b.image.replace(/^Art\/2DItems\//, '') + '.webp' : null;
   return src ? `<img class="${cls}" src="${src}" alt="" onerror="this.remove()">` : '';
 };
 function methodIcon(m) {
@@ -92,8 +90,31 @@ function selectBase(base) {
   S.base = base;
   S.item = newItem(base, S.ilvl);
   S.history = []; S.log = []; S.method = null; S.foresee = {}; S.reveal = null;
-  ctx.omens.clear(); // omens belong to the item being crafted
+  clearOmens(); // omens belong to the item being crafted
   url(); renderAll();
+}
+
+/** True when the current item has been crafted on (so leaving it would lose work). */
+function itemHasWork() {
+  const it = S.item;
+  return !!it && (S.history.length > 0 || it.rarity !== 'normal' || it.mods.length > 0 || it.unrevealed.length > 0
+    || it.socketed.length > 0 || it.quality > 0 || it.corrupted);
+}
+
+/**
+ * Go back to a picker from the breadcrumb: 'group' (choose a group again), 'class', or 'base'. The crafted item is dropped,
+ * so ask first when there is work in it. Returns false if the user cancelled.
+ */
+function pickAgain(level) {
+  if (itemHasWork() && !window.confirm('Switching drops this item and its crafting history. Continue?')) return false;
+  if (level === 'group') S.cls = null;
+  S.base = null; S.item = null;
+  S.history = []; S.log = []; S.foresee = {}; S.reveal = null;
+  S.method = null; S.openCurrency = null; S.ctx = null; S.modal = null;
+  S.baseSearch = '';
+  clearOmens();
+  url(); renderAll();
+  return true;
 }
 
 // Reset item: same base, fresh item, nothing held, no omens armed. (The Reset under the item.)
@@ -102,7 +123,7 @@ function reset() {
   S.item = newItem(S.base, S.ilvl);
   S.history = []; S.log = []; S.foresee = {}; S.reveal = null;
   S.method = null; S.openCurrency = null;
-  ctx.omens.clear();
+  clearOmens({ keepPinned: true }); // a pinned combo survives "Reset item" so you can repeat it on a fresh item
   renderCraft();
 }
 
@@ -113,7 +134,7 @@ function resetAll() {
   S.method = null; S.openCurrency = null; S.ctx = null; S.modal = null;
   S.baseSearch = ''; S.modSearch = ''; S.socketSearch = '';
   S.tab = 'Currencies';
-  ctx.omens.clear();
+  clearOmens();
   url(); renderAll();
 }
 
@@ -178,7 +199,7 @@ function openReveal(idx) {
 
 function rerollReveal() {
   if (!S.reveal || S.reveal.rerolled || !ctx.omens.has('echoes')) return;
-  ctx.omens.delete('echoes');
+  spendOmen('echoes');
   S.reveal = { ...S.reveal, options: revealOptions(S.item, S.item.unrevealed[S.reveal.idx]), rerolled: true };
   renderCraft();
 }
@@ -189,7 +210,7 @@ function pickReveal(i) {
   S.history.push(structuredClone(S.item));
   dropLock();
   const changes = revealMod(S.item, r.idx, r.options[i]);
-  for (const f of ['Amanamu', 'Kurgal', 'Ulaman']) ctx.omens.delete(f);
+  for (const f of ['Amanamu', 'Kurgal', 'Ulaman']) spendOmen(f);
   S.log.unshift({ name: 'Well of Souls reveal', changes });
   S.reveal = null;
   renderCraft();
@@ -236,6 +257,9 @@ function removeSpecific(idx) {
 
 // ---------- rendering ----------
 function renderPicker() {
+  // Once a base is chosen the pickers are just a record of the choice (shown as the breadcrumb below), so they collapse
+  // and the crafting area moves up. Click a breadcrumb to pick again.
+  if (S.base) { $('#picker').innerHTML = ''; return; }
   const cats = DB.categories.filter(c => !c.legacy);
   let h = '<h2>Choose an item group</h2><div class="chips">';
   for (const c of cats) h += `<button class="chip ${S.group === c.id ? 'active' : ''}" data-group="${c.id}">${esc(DB.text(c.label))}</button>`;
@@ -263,11 +287,13 @@ function renderSelected() {
   if (!S.base) { $('#selected').innerHTML = ''; return; }
   $('#selected').innerHTML = `
     <h2>Selected item base</h2>
-    <div class="row">
-      <span class="chip active">${esc(DB.text(DB.categories.find(c => c.id === S.group).label))}</span>
-      <span class="chip active">${esc(DB.text(S.cls.label))}</span>
-      <span class="chip active chip-base">${baseArt(S.base, 'chip-art')}${esc(baseName(S.base))}</span>
-      <button class="btn" id="change">Change</button>
+    <div class="row crumbs">
+      <button class="chip active crumb" data-crumb="group" title="Pick a different item group">${esc(DB.text(DB.categories.find(c => c.id === S.group).label))}</button>
+      <span class="crumb-sep">&rsaquo;</span>
+      <button class="chip active crumb" data-crumb="class" title="Pick a different item class">${esc(DB.text(S.cls.label))}</button>
+      <span class="crumb-sep">&rsaquo;</span>
+      <button class="chip active crumb chip-base" data-crumb="base" title="Pick a different base of this class">${baseArt(S.base, 'chip-art')}${esc(baseName(S.base))}</button>
+      <button class="btn" id="change" title="Pick a different base of this class">Change</button>
       <button class="btn" id="reset" title="Start over: clears the item group, class and base you chose">Reset</button>
     </div>
     <div class="row">
@@ -288,6 +314,18 @@ function relevantOmens() {
   return OMENS.filter(o => !o.retired && o.for === base);
 }
 
+// Always-visible list of armed omens (pinned ones marked), so a combo you set up stays obvious and easy to switch off.
+function renderArmedBar() {
+  if (!ctx.omens.size) return '';
+  const chips = [...ctx.omens].map(id => {
+    const o = OMENS.find(x => x.id === id);
+    if (!o) return '';
+    const pinned = ctx.pinned.has(id);
+    return `<span class="armed-chip ${pinned ? 'pinned' : ''}" title="${esc(o.hint)}">${pinned ? '&#128204; ' : ''}${esc(o.name.replace('Omen of ', ''))}<button data-omen-off="${id}" title="Disarm">&times;</button></span>`;
+  }).join('');
+  return `<div class="armed"><span class="armed-label">Armed omens</span>${chips}</div>`;
+}
+
 function renderOmens() {
   const list = relevantOmens();
   if (!list.length) {
@@ -299,7 +337,8 @@ function renderOmens() {
     + list.map(o => {
       const off = o.todo || (['Ulaman', 'Kurgal', 'Amanamu'].includes(o.id) && faction(S.item));
       const why = o.todo ? o.hint : off ? 'Weapon / Jewellery only.' : o.hint;
-      return `<button class="chip ${ctx.omens.has(o.id) ? 'active' : ''} ${off ? 'off' : ''}" ${off ? 'disabled' : ''} data-omen="${o.id}" title="${esc(why)}">${esc(o.name.replace('Omen of ', ''))}${o.for === 'reveal' ? '<small>at reveal</small>' : ''}</button>`;
+      const pinned = ctx.pinned.has(o.id);
+      return `<span class="omen-wrap ${pinned ? 'pinned' : ''}"><button class="chip ${ctx.omens.has(o.id) ? 'active' : ''} ${off ? 'off' : ''}" ${off ? 'disabled' : ''} data-omen="${o.id}" title="${esc(why)}">${esc(o.name.replace('Omen of ', ''))}${o.for === 'reveal' ? '<small>at reveal</small>' : ''}</button><button class="pin ${pinned ? 'on' : ''}" ${off ? 'disabled' : ''} data-pin="${o.id}" title="${pinned ? 'Pinned: stays armed after every use. Click to unpin.' : 'Pin: keep this omen armed after each use, to repeat a combo'}">&#128204;</button></span>`;
     }).join('') + '</div>';
 }
 
@@ -320,7 +359,7 @@ function removalTargets() {
   return { cands: removalPool(S.item, opts), count: count || 1, opts };
 }
 
-const TABS = ['Currencies', 'Essences', 'Desecrate', 'Socketables', 'Generate'];
+const TABS = ['Currencies', 'Essences', 'Desecrate', 'Socketables'];
 
 function essenceMethods(it) {
   const E = DB.raw.essences;
@@ -401,7 +440,7 @@ function renderCurrencies() {
   let h = '<h2>Choose a crafting method</h2><div class="chips tabs">';
   for (const t of TABS) h += `<button class="chip ${S.tab === t ? 'active' : ''}" data-tab="${t}">${t}</button>`;
   h += '</div>';
-  if (S.tab === 'Currencies' || S.tab === 'Generate') {
+  if (S.tab === 'Currencies') {
     h += '<div class="currencies">' + currencyButtons(it, CATALOGUE.filter(m => m.group === S.tab)) + '</div>';
   } else if (S.tab === 'Desecrate') {
     h += '<div class="currencies">' + CATALOGUE.filter(m => m.group === 'Desecrate').map(m => methodButton(it, m)).join('') + '</div>';
@@ -421,7 +460,7 @@ function renderCurrencies() {
     h += `<div class="row"><input id="socketSearch" class="input" placeholder="Search socketables" value="${esc(S.socketSearch)}"></div><div class="currencies" id="socketList"></div>`;
     h += `<p class="calc-note">Sockets: ${it.socketed.length}/${it.sockets}. Click a socket on the item to place the selected augment there; a filled socket is replaced (the old augment is destroyed) unless it is socket-bound (marked with a lock).</p>`;
   }
-  h += renderOmens();
+  h += renderArmedBar() + renderOmens();
   $('#currencies').innerHTML = h;
   if (S.tab === 'Socketables') renderSocketList();
 }
@@ -432,7 +471,7 @@ const modHtml = (m, idx) => {
   const e = poolEntry(S.item.classId, m.id);
   const kind = affixOf(mod) || '';
   const faction = factionOf(mod);
-  return `<div class="mod ${kind} ${m.fractured ? 'fractured' : ''} ${m.desecrated ? 'desecrated' : ''} ${TARGETS?.cands.some(c => c.m === m) ? 'target' : ''}" data-remove="${idx}">${modLines(mod, m.rolls).map(esc).join('<br>')}
+  return `<div class="mod ${kind} ${m.fractured ? 'fractured' : ''} ${m.desecrated ? 'desecrated' : ''} ${m.crafted ? 'is-crafted' : ''} ${TARGETS?.cands.some(c => c.m === m) ? 'target' : ''}" data-remove="${idx}">${modLines(mod, m.rolls).map(esc).join('<br>')}
     <span class="meta"><b>${kind}</b> “${esc(DB.text(mod.label))}” · ${e ? 'tier ' + e.tier : 'special'} · mod lvl ${mod.minlvl}${m.crafted ? ' · <b class="crafted">crafted</b>' : ''}${m.desecrated ? ` · <b class="desec">desecrated${faction ? ' · ' + faction : ''}</b>` : ''}${m.fractured ? ' · <b class="frac">fractured</b>' : ''}</span></div>`;
 };
 
@@ -491,14 +530,50 @@ function renderForesee() {
   return `<div class="foresee"><b>Foresight: ${esc(methodName(S.method))}</b>${lines}<div class="calc-note">Click the item to commit this exact result.</div></div>`;
 }
 
+// Weapon damage / crit / speed or armour defences under the item name. A value that differs from the base (quality, local
+// mods) is drawn in the "augmented" blue, like the game does.
+const fmt1 = n => String(Math.round(n * 10) / 10);
+const fmt2 = n => (Math.round(n * 100) / 100).toFixed(2);
+const spanText = ([a, b]) => `${Math.round(a)}–${Math.round(b)}`;   // damage is shown as whole numbers, like the game
+const differs = (a, b) => Math.abs(a - b) > 0.005;
+
+function statLines(st) {
+  if (!st) return [];
+  const line = (label, value, aug, cls = '') => `<div class="prop ${cls}">${label}: <b class="${aug ? 'q' : ''}">${value}</b></div>`;
+  const out = [];
+  if (st.kind === 'weapon') {
+    for (const el of ['physical', 'fire', 'cold', 'lightning', 'chaos']) {
+      const d = st.damage[el];
+      if (!d) continue;
+      out.push(line(el === 'physical' ? 'Physical Damage' : `${el[0].toUpperCase()}${el.slice(1)} Damage`, spanText(d.final), differs(d.final[0], d.base[0]) || differs(d.final[1], d.base[1]), 'el-' + el));
+    }
+    out.push(line('Critical Hit Chance', fmt2(st.crit.final) + '%', differs(st.crit.final, st.crit.base)));
+    out.push(line('Attacks per Second', fmt2(st.aps.final), differs(st.aps.final, st.aps.base)));
+    if (st.range != null) out.push(line('Weapon Range', fmt1(st.range), false));
+    // DPS row as on the trade site: only weapons that deal damage get one (wands, staves, sceptres, armour do not)
+    const parts = [`<span>DPS: <b>${Math.round(st.dps.total)}</b></span>`];
+    if (st.dps.physical > 0) parts.push(`<span>Physical DPS: <b>${fmt2(st.dps.physical)}</b></span>`);
+    if (st.dps.elemental > 0) parts.push(`<span>Elemental DPS: <b>${fmt2(st.dps.elemental)}</b></span>`);
+    out.push(`<div class="dps" title="Average of the shown damage range x the shown attacks per second, as the trade site computes it">${parts.join('')}</div>`);
+  } else if (st.kind === 'armour') {
+    for (const d of st.defences) out.push(line(d.label, fmt1(d.final), differs(d.final, d.base)));
+    if (st.block) out.push(line('Block chance', fmt1(st.block.final) + '%', differs(st.block.final, st.block.base)));
+  } else if (st.kind === 'caster') {
+    if (st.spirit) out.push(line('Spirit', st.spirit.final, differs(st.spirit.final, st.spirit.base)));
+    for (const s of st.skills) {
+      const q = st.skillQuality ? ` <small class="skill-q" title="Quality on a wand or staff improves the skill it grants, not the weapon">skill quality +${st.skillQuality}%</small>` : '';
+      out.push(`<div class="prop skill" title="The granted skill's level comes from the item level">Grants Skill: Level ${s.level} <b>${esc(s.name)}</b>${q}</div>`);
+    }
+  }
+  return out;
+}
+
 function renderTooltip() {
   const it = S.item, b = S.base;
   TARGETS = removalTargets();
   const [name, sub] = itemName(it);
   const props = [];
-  const P = b.props || {};
-  const label = { armour: 'Armour', evasion: 'Evasion Rating', energyshield: 'Energy Shield', ward: 'Runic Ward', block: 'Block chance' };
-  for (const [k, v] of Object.entries(label)) if (P[k]) props.push(`<div class="prop">${v}: <b>${P[k]}</b></div>`);
+  props.push(...statLines(itemStats(it)));
   const reqs = [`Level ${b.drop}`];
   const R = b.reqs || {};
   if (R.strength) reqs.push(`Str ${R.strength}`);
@@ -523,6 +598,7 @@ function renderTooltip() {
   const mods = [...prefixes, ...suffixes].map(([m, i]) => modHtml(m, i)).join('')
     + it.unrevealed.map((u, i) => `<div class="unrevealed ${TARGETS?.cands.some(c => c.u === u) ? 'target' : ''}" data-unrev="${i}"><span>Unrevealed desecrated ${u.affix}</span> <button class="mini" data-reveal="${i}">Reveal at the Well of Souls</button></div>`).join('');
   $('#tooltip').innerHTML = `
+    <div class="item-toolbar"><button class="mini" id="undo" ${S.history.length ? '' : 'disabled'}>Undo</button><button class="mini" id="resetItem" title="Back to a fresh item of the same base">Reset item</button></div>
     <div class="item ${it.rarity} ${S.method ? 'apply' : ''}" id="itemBox" title="${S.method ? 'Click to apply ' + esc(methodName(S.method)) : 'Select a crafting method'}">
       <div class="item-head">${esc(name)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>
       <div class="item-body">
@@ -538,7 +614,6 @@ function renderTooltip() {
         ${augments ? '<div class="sep"></div>' + augments : ''}
         ${it.corrupted ? '<div class="corrupted">Corrupted</div>' : ''}
       </div>
-      <div class="item-actions"><button class="mini" id="undo" ${S.history.length ? '' : 'disabled'}>Undo</button><button class="mini" id="resetItem" title="Back to a fresh item of the same base">Reset item</button></div>
     </div>${renderTargets()}${renderReveal()}${renderForesee()}`;
 }
 
@@ -694,6 +769,30 @@ function updateCursorIcon() {
 
 const CTX_W = 250;
 
+/**
+ * Where the Actions menu goes: next to the item, never on top of it. It sits to the left of the item box (the item stays
+ * fully visible), level with the mod that was right-clicked, and is kept inside the window. If there is no room on the
+ * left it goes to the right of the item, and as a last resort it is centred.
+ */
+function ctxPosition(buttons) {
+  const height = 62 + buttons * 54;                       // header + one row per button
+  const box = $('#itemBox')?.getBoundingClientRect();
+  const row = $(`#itemBox [data-remove="${S.ctx.idx}"], #itemBox [data-unrev="${S.ctx.idx}"]`)?.getBoundingClientRect();
+  const gap = 14;
+  let x;
+  if (box && box.left - CTX_W - gap >= 8) x = box.left - CTX_W - gap;
+  else if (box && box.right + CTX_W + gap <= window.innerWidth - 8) x = box.right + gap;
+  else x = Math.max(8, (window.innerWidth - CTX_W) / 2);
+  let wantY = (row ? row.top : S.ctx.y) - 20;
+  const noSideRoom = !box || (box.left - CTX_W - gap < 8 && box.right + CTX_W + gap > window.innerWidth - 8);
+  if (noSideRoom && row) {
+    // narrow layout: the item fills the width, so keep the menu clear of the clicked mod by docking it to the opposite edge
+    wantY = row.top + row.height / 2 > window.innerHeight / 2 ? 8 : window.innerHeight - height - 8;
+  }
+  const y = Math.max(8, Math.min(wantY, window.innerHeight - height - 8));
+  return { x, y };
+}
+
 function renderOverlay() {
   const el = $('#overlay');
   if (!el) return;
@@ -702,8 +801,6 @@ function renderOverlay() {
 
   if (S.ctx && it) {
     const { kind, idx } = S.ctx;
-    const x = Math.min(S.ctx.x, window.innerWidth - CTX_W - 12);
-    const y = Math.min(S.ctx.y, window.innerHeight - 340);
     let items;
     if (kind === 'mod' && it.mods[idx]) {
       const m = it.mods[idx];
@@ -718,11 +815,16 @@ function renderOverlay() {
       items = `<button class="ctx-btn" data-ctx="unrev-remove">Remove unrevealed slot</button>
         <button class="ctx-btn" data-ctx="unrev-reveal">Reveal at the Well of Souls</button>`;
     }
-    if (items) h += `<div id="ctxMenu" style="left:${x}px;top:${y}px"><div class="ctx-head"><b>Actions</b><button class="mini" data-ctx="close">Close</button></div>${items}</div>`;
+    if (items) {
+      const { x, y } = ctxPosition(kind === 'mod' ? 6 : 2);
+      h += `<div id="ctxMenu" style="left:${x}px;top:${y}px"><div class="ctx-head"><b>Actions</b><button class="mini" data-ctx="close">Close</button></div>${items}</div>`;
+    }
   }
 
   if (S.modal && it) h += renderModal();
   el.innerHTML = h;
+  document.querySelectorAll('.ctx-target').forEach(n => n.classList.remove('ctx-target'));
+  if (S.ctx && it) document.querySelector(`#itemBox [data-remove="${S.ctx.idx}"], #itemBox [data-unrev="${S.ctx.idx}"]`)?.classList.add('ctx-target');
 }
 
 function renderModal() {
@@ -845,7 +947,7 @@ document.addEventListener('click', e => {
     modalAction(modalTarget.dataset.modal); return;
   }
   if (S.openCurrency && !e.target.closest('.cur-wrap')) { S.openCurrency = null; renderCurrencies(); }
-  const t = e.target.closest('[data-group],[data-class],[data-base],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-omen],[data-reveal],[data-pick],[data-fam],[data-pfam],[data-psec],[data-lichf],[data-add],[data-addref],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#itemBox');
+  const t = e.target.closest('[data-group],[data-class],[data-base],[data-crumb],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-omen],[data-omen-off],[data-pin],[data-reveal],[data-pick],[data-fam],[data-pfam],[data-psec],[data-lichf],[data-add],[data-addref],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#itemBox');
   if (!t) return;
   if (t.dataset.group) {
     S.group = +t.dataset.group; S.cls = null; S.base = null; S.item = null; url(); renderAll();
@@ -865,6 +967,13 @@ document.addEventListener('click', e => {
     S.tab = t.dataset.tab; S.method = null; renderCraft();
   } else if (t.dataset.sub != null) {
     S.sub[S.tab] = S.tab === 'Essences' ? +t.dataset.sub : t.dataset.sub; S.method = null; renderCraft();
+  } else if (t.dataset.omenOff) {
+    const id = t.dataset.omenOff;
+    if (ctx.omens.has(id)) toggleOmen(id);          // switching it off also unpins it
+    S.foresee = {}; S.reveal = null; renderCraft();
+  } else if (t.dataset.pin) {
+    togglePin(t.dataset.pin);
+    S.foresee = {}; S.reveal = null; renderCraft();
   } else if (t.dataset.omen) {
     toggleOmen(t.dataset.omen);
     S.foresee = {}; S.reveal = null; renderCraft();
@@ -902,8 +1011,10 @@ document.addEventListener('click', e => {
     else if (S.method) apply(S.method);
   } else if (t.id === 'itemBox') {
     if (S.method) apply(S.method);
+  } else if (t.dataset.crumb) {
+    pickAgain(t.dataset.crumb);
   } else if (t.id === 'change') {
-    S.base = null; S.item = null; url(); renderAll();
+    pickAgain('base');
   } else if (t.id === 'reset') {
     resetAll();
   } else if (t.id === 'resetItem') {
@@ -946,7 +1057,7 @@ document.addEventListener('keydown', e => {
 (async function boot() {
   await loadData();
   CATALOGUE = methodCatalogue();
-  $('#app').innerHTML = '<div id="picker"></div><div id="selected"></div><div id="craft" hidden><div id="currencies"></div><div class="layout"><div><h2>Modifiers</h2><div id="pool"></div></div><div class="sticky"><div id="tooltip"></div><div id="log" class="log"></div></div></div></div><div id="cursorIcon" hidden><img alt="" hidden><span></span></div><div id="overlay"></div>';
+  $('#app').innerHTML = '<div id="picker"></div><div id="selected"></div><div id="craft" hidden><div class="layout"><div class="main-col"><div id="currencies"></div><h2>Modifiers</h2><div id="pool"></div></div><div class="sticky"><div id="tooltip"></div><div id="log" class="log"></div></div></div></div><div id="cursorIcon" hidden><img alt="" hidden><span></span></div><div id="overlay"></div>';
   const p = new URLSearchParams(location.search);
   if (p.get('group')) S.group = +p.get('group');
   if (p.get('class')) S.cls = DB.classes.get(+p.get('class'));

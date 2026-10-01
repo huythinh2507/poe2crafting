@@ -4,9 +4,10 @@ export const DB = {};
 const strip = s => (s || '').replace(/\[([^\]|]*)\|([^\]]*)\]/g, '$2').replace(/\[([^\]]*)\]/g, '$1');
 
 export async function loadData() {
-  const [raw, lang] = await Promise.all([
+  const [raw, lang, weaponBases] = await Promise.all([
     fetch('data/data.json').then(r => r.json()),
     fetch('data/english.json').then(r => r.json()),
+    fetch('data/weapon-bases.json').then(r => (r.ok ? r.json() : {})).catch(() => ({})),   // optional: scraped from poe2db
   ]);
   const byId = block => {
     const m = new Map();
@@ -14,6 +15,7 @@ export async function loadData() {
     return m;
   };
   DB.raw = raw;
+  DB.weaponBases = weaponBases;
   DB.L = lang;
   DB.text = i => (i == null ? '' : strip(lang[i]));
   DB.categories = raw.categories.entries;
@@ -175,4 +177,43 @@ const CHIP_TAGS = ['damage', 'elemental', 'fire', 'cold', 'lightning', 'chaos', 
 export function tagChips(mod) {
   const keys = (DB.groups.get(mod.group)?.tags || []).map(t => DB.raw.tags.entries.find(x => x.id === t)?.key);
   return CHIP_TAGS.filter(k => keys.includes(k)).slice(0, 3);
+}
+
+// ---- Base item stats ----------------------------------------------------------------------------------------------
+// The game data has physical damage / crit / attack time / range per weapon base, but NOT the hidden implicit that turns a
+// share of a base's damage into fire / cold / lightning (Cinderbark Talisman: "30% of base damage is fire"). That split comes
+// from poe2db (public/data/weapon-bases.json, fetched by scripts/fetch-weapon-bases.mjs).
+
+let nameCounts = null;
+const baseNameCount = name => {
+  if (!nameCounts) {
+    nameCounts = new Map();
+    for (const i of DB.items.values()) if (i.domain === 1 && i.drop) { const n = DB.text(i.label); nameCounts.set(n, (nameCounts.get(n) || 0) + 1); }
+  }
+  return nameCounts.get(name) || 0;
+};
+
+const ELEMENTS = ['physical', 'fire', 'cold', 'lightning', 'chaos'];
+
+/** Base stats of a weapon / armour / caster base, or null if it has none. */
+export function baseStats(base) {
+  const p = base.props || {};
+  const skills = (base.skills || []).map(id => DB.raw.skills.entries.find(s => s.id === id)).filter(Boolean)
+    .map(s => DB.text(DB.items.get(s.item)?.label)).filter(Boolean);
+
+  if (p.physical_damage_min != null) {
+    const total = [p.physical_damage_min, p.physical_damage_max];
+    let damage = { physical: total };
+    // use poe2db's split into physical + elemental only when it is unambiguous: a unique base name whose damage adds up to ours
+    const ref = DB.weaponBases?.[DB.text(base.label)];
+    if (ref && baseNameCount(DB.text(base.label)) === 1) {
+      const sum = [0, 1].map(k => ELEMENTS.reduce((s, e) => s + (ref.damage[e]?.[k] || 0), 0));
+      if (Math.abs(sum[0] - total[0]) <= 0.6 && Math.abs(sum[1] - total[1]) <= 0.6) damage = Object.fromEntries(ELEMENTS.filter(e => ref.damage[e]).map(e => [e, ref.damage[e]]));
+    }
+    return { kind: 'weapon', damage, crit: p.critical_strike_chance / 100, aps: 1000 / p.attack_time, range: p.range <= 300 ? p.range / 10 : null, skills };
+  }
+  const def = { armour: p.armour, evasion: p.evasion, energyshield: p.energyshield, ward: p.ward };
+  if (Object.values(def).some(v => v)) return { kind: 'armour', defences: def, block: p.block || null, skills };
+  if (skills.length || p.spirit) return { kind: 'caster', skills, spirit: p.spirit || null };
+  return null;
 }

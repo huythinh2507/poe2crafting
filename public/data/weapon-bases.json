@@ -1,0 +1,4841 @@
+{
+ "Golden Blade": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    6,
+    9
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Energy Blade": {
+  "class": "Two_Hand_Swords",
+  "damage": {},
+  "hidden": [],
+  "requires": "",
+  "crit": 7,
+  "aps": 1.6,
+  "range": 1.6
+ },
+ "Shortsword": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    6,
+    9
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Broadsword": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    8,
+    13
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 6, 9 Str, 9 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.3
+ },
+ "Vampiric Blade": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    11,
+    20
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 11, 14 Str, 14 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Scimitar": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    14,
+    23
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 19 Str, 19 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Charred Shortsword": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    19,
+    34
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 21, 23 Str, 23 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.3
+ },
+ "Sickle Sword": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    18,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 28, 29 Str, 29 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Falchion": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    27,
+    37
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 34 Str, 34 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Treasured Blade": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    27,
+    45
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 40 Str, 40 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Cutlass": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    33,
+    49
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 45 Str, 45 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Runic Shortsword": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    26,
+    55
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 50, 49 Str, 49 Dex",
+  "crit": 5,
+  "aps": 1.65,
+  "range": 1.3
+ },
+ "Messer": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    30,
+    56
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 51 Str, 51 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.3
+ },
+ "Commander Sword": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    36,
+    60
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 53 Str, 53 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Dark Blade": {
+  "class": "One_Hand_Swords",
+  "damage": {
+   "physical": [
+    43,
+    65
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 63 Str, 63 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Corroded Longsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    9,
+    16
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.6
+ },
+ "Iron Greatsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    13,
+    23
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 6, 9 Str, 9 Dex",
+  "crit": 5,
+  "aps": 1.35,
+  "range": 1.6
+ },
+ "Blessed Claymore": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    19,
+    32
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 11, 14 Str, 14 Dex",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.6
+ },
+ "Broad Greatsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    25,
+    42
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 19 Str, 19 Dex",
+  "crit": 5,
+  "aps": 1.25,
+  "range": 1.6
+ },
+ "Rippled Greatsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    28,
+    52
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 22, 24 Str, 24 Dex",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.6
+ },
+ "Arced Longsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    31,
+    58
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 28, 29 Str, 29 Dex",
+  "crit": 5,
+  "aps": 1.35,
+  "range": 1.6
+ },
+ "Stone Greatsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    40,
+    67
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 34 Str, 34 Dex",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.6
+ },
+ "Obsidian Greatsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    49,
+    73
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 36, 37 Str, 37 Dex",
+  "crit": 5,
+  "aps": 1.25,
+  "range": 1.6
+ },
+ "Keen Greatsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    45,
+    94
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 45 Str, 45 Dex",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.6
+ },
+ "Ancient Greatblade": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    55,
+    103
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 49, 49 Str, 49 Dex",
+  "crit": 5,
+  "aps": 1.25,
+  "range": 1.6
+ },
+ "Flanged Greatblade": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    51,
+    106
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 51 Str, 51 Dex",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.6
+ },
+ "Regalia Longsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    61,
+    92
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 53 Str, 53 Dex",
+  "crit": 5,
+  "aps": 1.35,
+  "range": 1.6
+ },
+ "Ultra Greatsword": {
+  "class": "Two_Hand_Swords",
+  "damage": {
+   "physical": [
+    72,
+    119
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 63 Str, 63 Dex",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.6
+ },
+ "Dull Hatchet": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    4,
+    10
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Hook Axe": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    5,
+    14
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 4, 9 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Bearded Axe": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    8,
+    21
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 10, 17 Str, 9 Dex",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Extended Cleaver": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    8,
+    25
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 25 Str, 12 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Bandit Hatchet": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    13,
+    31
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 20, 30 Str, 14 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Crescent Axe": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    18,
+    37
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 26, 38 Str, 17 Dex",
+  "crit": 6.5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Carving Hatchet": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    19,
+    44
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 47 Str, 20 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Sacrificial Axe": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    20,
+    42
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 37, 52 Str, 22 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Boarding Hatchet": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    24,
+    55
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 63 Str, 26 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Fury Cleaver": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    30,
+    62
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 48, 67 Str, 27 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Battle Axe": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    28,
+    65
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 72 Str, 29 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Profane Cleaver": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    26,
+    69
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 75 Str, 30 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Dread Hatchet": {
+  "class": "One_Hand_Axes",
+  "damage": {
+   "physical": [
+    34,
+    79
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 89 Str, 36 Dex",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Splitting Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    8,
+    20
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Light Halberd": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    10,
+    25
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 4, 9 Str",
+  "crit": 5,
+  "aps": 1.25,
+  "range": 1.5
+ },
+ "Executioner Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    10,
+    41
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 10, 17 Str, 9 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Arched Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    17,
+    59
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 25 Str, 12 Dex",
+  "crit": 5,
+  "aps": 1.15,
+  "range": 1.5
+ },
+ "Elegant Glaive": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    19,
+    64
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 20, 30 Str, 14 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Savage Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    23,
+    70
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 27, 39 Str, 17 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Rending Halberd": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    27,
+    91
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 47 Str, 20 Dex",
+  "crit": 6.5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Jagged Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    43,
+    99
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 56 Str, 23 Dex",
+  "crit": 5,
+  "aps": 1.15,
+  "range": 1.5
+ },
+ "Reaver Glaive": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    43,
+    113
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 63 Str, 26 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Ember Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "fire": [
+    58,
+    154
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [100]"
+  ],
+  "requires": "Requires: Level 50, 70 Str, 28 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Ceremonial Halberd": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    53,
+    123
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 72 Str, 29 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Monument Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    48,
+    143
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 57, 79 Str, 32 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Vile Greataxe": {
+  "class": "Two_Hand_Axes",
+  "damage": {
+   "physical": [
+    59,
+    155
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 89 Str, 36 Dex",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Wooden Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    6,
+    10
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Smithing Hammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    5.5,
+    9
+   ],
+   "fire": [
+    5.5,
+    9
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [50]"
+  ],
+  "requires": "Requires: Level 4, 11 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Slim Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    11,
+    17
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 10, 21 Str",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Spiked Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    15,
+    24
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 31 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Warpick": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    18,
+    24
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 22, 41 Str",
+  "crit": 7,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Plated Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    18,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 26, 48 Str",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Brigand Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    28,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 60 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Construct Hammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    31,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 36, 65 Str",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Morning Star": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    33,
+    49
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 80 Str",
+  "crit": 6.5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Jade Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    31,
+    51
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 49, 87 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Lumen Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    36,
+    60
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 92 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Execratus Hammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    40,
+    60
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Torment Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    44,
+    73
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 114 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Runemastered Torment Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    54,
+    91
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 124 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Kalguuran Forgehammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    33,
+    55
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 47",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Calescent Hammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    22,
+    37
+   ],
+   "fire": [
+    22,
+    37
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [50]"
+  ],
+  "requires": "Requires: Level 45, 80 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Flared Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    33,
+    50
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 48, 86 Str",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Battle Pick": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    35,
+    47
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 51, 91 Str",
+  "crit": 7,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Marching Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    33,
+    69
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 96 Str",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Runeforged Marching Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    46,
+    96
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 114 Str",
+  "crit": 7.5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Bandit Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    45,
+    61
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 59, 104 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Structured Hammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    49,
+    60
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 62, 109 Str",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Runeforged Wooden Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    83,
+    138
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 68 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Runemastered Wooden Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    132,
+    220
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Runeforged Slim Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    48,
+    72.5
+   ],
+   "cold": [
+    48,
+    72.5
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is cold [50]"
+  ],
+  "requires": "Requires: Level 38, 68 Str",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Runeforged Spiked Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    56,
+    93
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 72 Str",
+  "crit": 5,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Runeforged Warpick": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    75,
+    102
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 68 Str",
+  "crit": 7,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Runeforged Kalguuran Forgehammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    59,
+    99
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Runeforged Morning Star": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "fire": [
+    90,
+    134
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [100]"
+  ],
+  "requires": "Requires: Level 65, 114 Str",
+  "crit": 6.5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Flanged Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    45,
+    67
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 134 Str",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.3
+ },
+ "Crown Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    43,
+    89
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 72, 149 Str",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Molten Hammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    35.5,
+    59
+   ],
+   "fire": [
+    35.5,
+    59
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [50]"
+  ],
+  "requires": "Requires: Level 77, 163 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Strife Pick": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    49,
+    66
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 163 Str",
+  "crit": 7,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Fortified Hammer": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    60,
+    73
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 79, 163 Str",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Marauding Mace": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    51,
+    84
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 163 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Akoyan Club": {
+  "class": "One_Hand_Maces",
+  "damage": {
+   "physical": [
+    46,
+    76
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 163 Str",
+  "crit": 5,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Felled Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    13,
+    18
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Oak Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    16,
+    30
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 4, 11 Str",
+  "crit": 5,
+  "aps": 1,
+  "range": 1.5
+ },
+ "Forge Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    26,
+    35
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 11, 23 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Studded Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    32,
+    48
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 31 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Cultist Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    36,
+    49
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 22, 41 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Temple Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    35,
+    72
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 28, 52 Str",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Leaden Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    58,
+    78
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 60 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Crumbling Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    62,
+    75
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 68 Str",
+  "crit": 8,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Pointed Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    68,
+    102
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 80 Str",
+  "crit": 6.5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Totemic Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    77,
+    105
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 50, 89 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Greatmace": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    74,
+    124
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 92 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Precise Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    87,
+    118
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 96 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Giant Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    96,
+    144
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 114 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Snakewood Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    62,
+    115
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 80 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Blacksmith Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    75,
+    102
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 48, 86 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Zealot Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    70,
+    95
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 51, 91 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Solemn Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    59,
+    123
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 96 Str",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Heavy Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    94,
+    127
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 59, 104 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Disintegrating Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    92,
+    112
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 62, 109 Str",
+  "crit": 8,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Runeforged Felled Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    146,
+    197
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 68 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Runemastered Felled Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    217,
+    293
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Str",
+  "crit": 10,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Runeforged Oak Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    73,
+    135
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 68 Str",
+  "crit": 5,
+  "aps": 1,
+  "range": 1.5
+ },
+ "Runemastered Oak Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    111,
+    207
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Str",
+  "crit": 5,
+  "aps": 1,
+  "range": 1.5
+ },
+ "Runeforged Forge Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    147,
+    199
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 72 Str",
+  "crit": 10,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Runeforged Studded Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    23.5,
+    62.25
+   ],
+   "lightning": [
+    70.5,
+    186.75
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is lightning [75]"
+  ],
+  "requires": "Requires: Level 38, 68 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Runemastered Studded Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    15.5,
+    140.25
+   ],
+   "lightning": [
+    46.5,
+    420.75
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is lightning [75]"
+  ],
+  "requires": "Requires: Level 55, 97 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Runeforged Cultist Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    144,
+    194
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 72 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Runeforged Temple Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    64,
+    134
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 76 Str, 40 Dex",
+  "crit": 5,
+  "aps": 1.3,
+  "range": 1.5
+ },
+ "Runeforged Leaden Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    132,
+    179
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 60 Str, 50 Int",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Runeforged Crumbling Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    105,
+    128
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Str",
+  "crit": 8,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Runeforged Pointed Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    125,
+    188
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 114 Str",
+  "crit": 6.5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Anvil Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    101,
+    136
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 134 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Sacred Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    76,
+    158
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 72, 149 Str",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Ironwood Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    105,
+    196
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 163 Str",
+  "crit": 5,
+  "aps": 1,
+  "range": 1.5
+ },
+ "Fanatic Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    101,
+    137
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 163 Str",
+  "crit": 5,
+  "aps": 1.05,
+  "range": 1.5
+ },
+ "Ruination Maul": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    104,
+    127
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 79, 163 Str",
+  "crit": 8,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Massive Greathammer": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    119,
+    161
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 163 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Tawhoan Greatclub": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    113,
+    153
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 163 Str",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.5
+ },
+ "Aberrant Sledge": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    74,
+    154
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 70, 163 Str",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Runemastered Aberrant Sledge": {
+  "class": "Two_Hand_Maces",
+  "damage": {
+   "physical": [
+    29.6,
+    61.6
+   ],
+   "cold": [
+    118.4,
+    246.4
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is cold [80]"
+  ],
+  "requires": "Requires: Level 70, 163 Str",
+  "crit": 5,
+  "aps": 1.2,
+  "range": 1.5
+ },
+ "Hardwood Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    5,
+    9
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Ironhead Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    9,
+    12
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 5, 10 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Hunting Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    10,
+    17
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 10, 9 Str, 17 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Winged Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    12,
+    22
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 12 Str, 25 Dex",
+  "crit": 5,
+  "aps": 1.7,
+  "range": 1.5
+ },
+ "War Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    16,
+    27
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 21, 14 Str, 31 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Forked Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    13,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 26, 17 Str, 38 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Barbed Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    20,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 20 Str, 47 Dex",
+  "crit": 6,
+  "aps": 1.5,
+  "range": 1.5
+ },
+ "Broad Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    32,
+    48
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 26 Str, 55 Dex",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.5
+ },
+ "Crossblade Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    25,
+    52
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 26 Str, 63 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Seaglass Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    29,
+    53
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 51, 29 Str, 71 Dex, 50 Int",
+  "crit": 7,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Sword Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    30,
+    56
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 29 Str, 72 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Striking Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    11.5,
+    45.5
+   ],
+   "lightning": [
+    11.5,
+    45.5
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is lightning [50]"
+  ],
+  "requires": "Requires: Level 55, 31 Str, 76 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Helix Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    37,
+    68
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 36 Str, 89 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Steelhead Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    33,
+    44
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 26 Str, 63 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Coursing Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    31,
+    52
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 48, 27 Str, 67 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Swift Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    32,
+    53
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 51, 29 Str, 71 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Branched Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    23,
+    69
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 30 Str, 75 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Jagged Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    33,
+    61
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 59, 33 Str, 81 Dex",
+  "crit": 6,
+  "aps": 1.5,
+  "range": 1.5
+ },
+ "Massive Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    46,
+    69
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 62, 40 Str, 80 Dex",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.5
+ },
+ "Runeforged Hardwood Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    24,
+    45
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 23 Str, 56 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Runeforged Ironhead Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    40,
+    54
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 23 Str, 54 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Runemastered Ironhead Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    94,
+    127
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 31 Str, 76 Dex",
+  "crit": 5,
+  "aps": 1.25,
+  "range": 1.5
+ },
+ "Runeforged Hunting Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    65,
+    108
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 23 Str, 54 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Runeforged Winged Spear": {
+  "class": "Spears",
+  "damage": {
+   "lightning": [
+    0,
+    125
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is lightning [100]"
+  ],
+  "requires": "Requires: Level 40, 23 Str, 56 Dex",
+  "crit": 5,
+  "aps": 1.7,
+  "range": 1.5
+ },
+ "Runeforged War Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    59,
+    98
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 23 Str, 56 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Runeforged Forked Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    8,
+    57
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 31 Str, 76 Dex",
+  "crit": 7,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Runeforged Barbed Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    26.52,
+    49.3
+   ],
+   "fire": [
+    51.48,
+    95.7
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [66]"
+  ],
+  "requires": "Requires: Level 55, 31 Str, 76 Dex",
+  "crit": 6,
+  "aps": 1.5,
+  "range": 1.5
+ },
+ "Orichalcum Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    46,
+    62
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 41 Str, 104 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Soaring Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    35,
+    65
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 70, 41 Str, 115 Dex",
+  "crit": 5,
+  "aps": 1.7,
+  "range": 1.5
+ },
+ "Pronged Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    30,
+    89
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 72, 46 Str, 115 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Stalking Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    47,
+    79
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 50 Str, 127 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Flying Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    46,
+    77
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 50 Str, 127 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Grand Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    56,
+    84
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 79, 68 Str, 109 Dex",
+  "crit": 5,
+  "aps": 1.4,
+  "range": 1.5
+ },
+ "Spiked Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    41,
+    76
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 50 Str, 127 Dex",
+  "crit": 6,
+  "aps": 1.5,
+  "range": 1.5
+ },
+ "Guardian Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    38,
+    79
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 75, 50 Str, 127 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.5
+ },
+ "Akoyan Spear": {
+  "class": "Spears",
+  "damage": {
+   "physical": [
+    39,
+    72
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 50 Str, 127 Dex, 90 Int",
+  "crit": 7,
+  "aps": 1.6,
+  "range": 1.5
+ },
+ "Crude Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    4,
+    10
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.65,
+  "range": 1.1
+ },
+ "Pict Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    4,
+    16
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 6, 14 Dex",
+  "crit": 5,
+  "aps": 1.7,
+  "range": 1.1
+ },
+ "Wolfbone Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    7,
+    23
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 12, 24 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.1
+ },
+ "Forked Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    10,
+    26
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 31 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.1
+ },
+ "Plated Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    13,
+    31
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 22, 41 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.1
+ },
+ "Edged Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    11,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 28, 52 Dex",
+  "crit": 5,
+  "aps": 1.7,
+  "range": 1.1
+ },
+ "Arced Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    12,
+    46
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 60 Dex",
+  "crit": 5,
+  "aps": 1.65,
+  "range": 1.1
+ },
+ "Hooked Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    16,
+    49
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 36, 65 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.1
+ },
+ "Razorglass Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    23,
+    54
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 80 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.1
+ },
+ "Sharktooth Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    25,
+    52
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 49, 87 Dex",
+  "crit": 5,
+  "aps": 1.7,
+  "range": 1.1
+ },
+ "Armoured Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    27,
+    63
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 92 Dex",
+  "crit": 5,
+  "aps": 1.55,
+  "range": 1.1
+ },
+ "Piercing Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    23,
+    68
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Dex",
+  "crit": 5,
+  "aps": 1.6,
+  "range": 1.1
+ },
+ "Talon Claw": {
+  "class": "Claws",
+  "damage": {
+   "physical": [
+    23,
+    79
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 114 Dex",
+  "crit": 5,
+  "aps": 1.65,
+  "range": 1.1
+ },
+ "Ethereal Blade": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    5,
+    10
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 6,
+  "aps": 1.5,
+  "range": 1
+ },
+ "Glass Shank": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    3,
+    10
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Crone Knife": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    4,
+    15
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 6, 9 Dex, 9 Int",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Simple Dagger": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    8,
+    19
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 12, 15 Dex, 15 Int",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Skinning Knife": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    8,
+    22
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 19 Dex, 19 Int",
+  "crit": 13.5,
+  "aps": 1.65,
+  "range": 1
+ },
+ "Moon Dagger": {
+  "class": "Daggers",
+  "damage": {
+   "cold": [
+    11,
+    26
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is cold [100]"
+  ],
+  "requires": "Requires: Level 20, 22 Dex, 22 Int",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Engraved Knife": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    11,
+    34
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 27, 29 Dex, 29 Int",
+  "crit": 13.5,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Obsidian Dagger": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    13,
+    39
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 34 Dex, 34 Int",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Bloodletting Dagger": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    18,
+    42
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 39, 39 Dex, 39 Int",
+  "crit": 15,
+  "aps": 1.5,
+  "range": 1
+ },
+ "Mail Breaker": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    19,
+    44
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 45 Dex, 45 Int",
+  "crit": 15,
+  "aps": 1.5,
+  "range": 1
+ },
+ "Kris Knife": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    16,
+    48
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 49, 49 Dex, 49 Int",
+  "crit": 15,
+  "aps": 1.65,
+  "range": 1
+ },
+ "Parrying Dagger": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    16,
+    55
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 51 Dex, 51 Int",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Arcane Dirk": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    22,
+    52
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 56, 55 Dex, 55 Int",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Cinquedea": {
+  "class": "Daggers",
+  "damage": {
+   "physical": [
+    21,
+    62
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 63 Dex, 63 Int",
+  "crit": 15,
+  "aps": 1.55,
+  "range": 1
+ },
+ "Wrapped Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    7,
+    12
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Long Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    9,
+    18
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 4, 9 Dex",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Gothic Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    16,
+    26
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 11, 18 Dex, 9 Int",
+  "crit": 12,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Crackling Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    5,
+    22
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum lightning damage [35]",
+   "local weapon implicit hidden added minimum lightning damage [1]"
+  ],
+  "requires": "Requires: Level 16, 25 Dex, 12 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Crescent Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    19,
+    39
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 20, 30 Dex, 14 Int",
+  "crit": 10,
+  "aps": 1.5,
+  "range": 1.4
+ },
+ "Steelpoint Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    28,
+    51
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 28, 41 Dex, 18 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Slicing Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    29,
+    60
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 47 Dex, 20 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Barrier Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    35,
+    58
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 37, 52 Dex, 22 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Hefty Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    39,
+    81
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 63 Dex, 26 Int",
+  "crit": 10,
+  "aps": 1.3,
+  "range": 1.4
+ },
+ "Smooth Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    59,
+    79
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 49, 68 Dex, 28 Int",
+  "crit": 0,
+  "aps": 1.5,
+  "range": 1.4
+ },
+ "Anima Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    47,
+    79
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 72 Dex, 29 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Graceful Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    47,
+    87
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 56, 77 Dex, 31 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Wyrm Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    57,
+    94
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 89 Dex, 36 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Reaching Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    35,
+    72
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 63 Dex, 26 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Barbarous Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    42,
+    71
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 48, 67 Dex, 27 Int",
+  "crit": 12,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Arcing Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    14,
+    55
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum lightning damage [75]",
+   "local weapon implicit hidden added minimum lightning damage [1]"
+  ],
+  "requires": "Requires: Level 51, 71 Dex, 29 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Waxing Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    39,
+    82
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 75 Dex, 30 Int",
+  "crit": 10,
+  "aps": 1.5,
+  "range": 1.4
+ },
+ "Bladed Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    45,
+    94
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 59, 81 Dex, 33 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Guardian Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    52,
+    86
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 62, 85 Dex, 34 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Runeforged Wrapped Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    93,
+    155
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 54 Dex, 23 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Runeforged Long Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    21,
+    43
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 54 Dex, 23 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Runemastered Long Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "cold": [
+    43,
+    89
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is cold [100]"
+  ],
+  "requires": "Requires: Level 55, 76 Dex, 31 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Runeforged Gothic Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "fire": [
+    80,
+    134
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [100]"
+  ],
+  "requires": "Requires: Level 38, 54 Dex, 23 Int",
+  "crit": 12,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Runemastered Gothic Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "fire": [
+    118,
+    196
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [100]"
+  ],
+  "requires": "Requires: Level 55, 76 Dex, 31 Int",
+  "crit": 12,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Runeforged Crescent Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "cold": [
+    39,
+    81
+   ],
+   "lightning": [
+    39,
+    81
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is cold [50]",
+   "local weapon implicit hidden % base damage is lightning [50]"
+  ],
+  "requires": "Requires: Level 40, 56 Dex, 23 Int",
+  "crit": 10,
+  "aps": 1.5,
+  "range": 1.4
+ },
+ "Runeforged Steelpoint Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    90,
+    167
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 56 Dex, 23 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Sinister Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    55,
+    91
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 104 Dex, 41 Int",
+  "crit": 12,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Lunar Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    50,
+    103
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 72, 115 Dex, 46 Int",
+  "crit": 10,
+  "aps": 1.5,
+  "range": 1.4
+ },
+ "Striking Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    53,
+    111
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 127 Dex, 50 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Bolting Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    24,
+    97
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum lightning damage [100]",
+   "local weapon implicit hidden added minimum lightning damage [1]"
+  ],
+  "requires": "Requires: Level 78, 127 Dex, 50 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Aegis Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    58,
+    97
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 79, 127 Dex, 50 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Razor Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    65,
+    108
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 127 Dex, 50 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Skullcrusher Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    59,
+    122
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 75, 127 Dex, 50 Int",
+  "crit": 10,
+  "aps": 1.3,
+  "range": 1.4
+ },
+ "Dreaming Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    99,
+    133
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 127 Dex, 50 Int",
+  "crit": 0,
+  "aps": 1.5,
+  "range": 1.4
+ },
+ "Warding Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    51,
+    85
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 127 Dex, 50 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Runemastered Warding Quarterstaff": {
+  "class": "Quarterstaves",
+  "damage": {
+   "physical": [
+    85,
+    141
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 127 Dex, 50 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.4
+ },
+ "Splintered Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    6,
+    9
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Chain Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    8,
+    14
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 6, 12 Str",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Holy Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    10,
+    17
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 11, 18 Str, 9 Int",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Iron Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    14,
+    23
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 25 Str, 12 Int",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Twin Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    8,
+    18
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 20, 30 Str, 14 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Slender Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    19,
+    32
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 26, 38 Str, 17 Int",
+  "crit": 8,
+  "aps": 1.5,
+  "range": 1.3
+ },
+ "Stone Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    23,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 47 Str, 20 Int",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Ring Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    23,
+    44
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 54 Str, 23 Int",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Guarded Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    31,
+    57
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 63 Str, 26 Int",
+  "crit": 10,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Icicle Flail": {
+  "class": "Flails",
+  "damage": {
+   "cold": [
+    24,
+    55
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is cold [100]"
+  ],
+  "requires": "Requires: Level 47, 66 Str, 27 Int",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Tearing Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    27,
+    56
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 72 Str, 29 Int",
+  "crit": 12.5,
+  "aps": 1.4,
+  "range": 1.3
+ },
+ "Great Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    35,
+    58
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 58, 80 Str, 32 Int",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Abyssal Flail": {
+  "class": "Flails",
+  "damage": {
+   "physical": [
+    36,
+    66
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 89 Str, 36 Int",
+  "crit": 10,
+  "aps": 1.45,
+  "range": 1.3
+ },
+ "Crude Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    6,
+    9
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Shortbow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    7,
+    14
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 5, 12 Dex",
+  "crit": 5,
+  "aps": 1.25
+ },
+ "Warden Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    12,
+    20
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 11, 23 Dex",
+  "crit": 5,
+  "aps": 1.15
+ },
+ "Recurve Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    15,
+    31
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 31 Dex",
+  "crit": 5,
+  "aps": 1.1
+ },
+ "Composite Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    19,
+    31
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 22, 41 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Dualstring Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    19,
+    35
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 28, 52 Dex",
+  "crit": 5,
+  "aps": 1.15
+ },
+ "Cultist Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    22,
+    36
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum chaos damage [19]",
+   "local weapon implicit hidden added minimum chaos damage [7]"
+  ],
+  "requires": "Requires: Level 33, 60 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Zealot Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    31,
+    47
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 39, 70 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Artillery Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    39,
+    72
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 80 Dex",
+  "crit": 5,
+  "aps": 1.1
+ },
+ "Tribal Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    38,
+    57
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 50, 89 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Greatbow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    40,
+    82
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 92 Str, 92 Dex",
+  "crit": 6.5,
+  "aps": 1.15
+ },
+ "Double Limb Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    42,
+    63
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 56, 99 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Heavy Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    45,
+    75
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 114 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Snakewood Shortbow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    29,
+    54
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 80 Dex",
+  "crit": 5,
+  "aps": 1.25
+ },
+ "Protector Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    35,
+    53
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 48, 86 Dex",
+  "crit": 5,
+  "aps": 1.15
+ },
+ "Rider Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    36,
+    61
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 51, 91 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Twin Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    32,
+    60
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 96 Dex",
+  "crit": 5,
+  "aps": 1.15
+ },
+ "Adherent Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    35,
+    59
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum chaos damage [32]",
+   "local weapon implicit hidden added minimum chaos damage [14]"
+  ],
+  "requires": "Requires: Level 59, 104 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Militant Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    46,
+    69
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 62, 109 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Runeforged Crude Bow": {
+  "class": "Bows",
+  "damage": {
+   "chaos": [
+    42,
+    62
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is chaos [100]"
+  ],
+  "requires": "Requires: Level 55, 97 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Runeforged Shortbow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    44,
+    81
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Dex",
+  "crit": 5,
+  "aps": 1.4
+ },
+ "Runeforged Warden Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    38,
+    63
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 72 Dex",
+  "crit": 5,
+  "aps": 1.15
+ },
+ "Runeforged Recurve Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    41,
+    84
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 72 Dex",
+  "crit": 5,
+  "aps": 1.1
+ },
+ "Runeforged Composite Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    53,
+    88
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Runeforged Dualstring Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    45,
+    83
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 97 Dex",
+  "crit": 6.5,
+  "aps": 1.15
+ },
+ "Runeforged Zealot Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    44,
+    67
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum chaos damage [19]",
+   "local weapon implicit hidden added minimum chaos damage [7]"
+  ],
+  "requires": "Requires: Level 55, 97 Dex",
+  "crit": 10,
+  "aps": 1.2
+ },
+ "Ironwood Shortbow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    41,
+    76
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 134 Dex",
+  "crit": 5,
+  "aps": 1.25
+ },
+ "Cavalry Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    49,
+    82
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 72, 149 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Guardian Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    53,
+    88
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 163 Dex",
+  "crit": 5,
+  "aps": 1.15
+ },
+ "Gemini Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    39,
+    72
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 163 Dex",
+  "crit": 5,
+  "aps": 1.15
+ },
+ "Fanatic Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    47,
+    79
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum chaos damage [64]",
+   "local weapon implicit hidden added minimum chaos damage [28]"
+  ],
+  "requires": "Requires: Level 79, 163 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Warmonger Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    56,
+    84
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 163 Dex",
+  "crit": 5,
+  "aps": 1.2
+ },
+ "Obliterator Bow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    62,
+    115
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 163 Dex",
+  "crit": 5,
+  "aps": 1.1
+ },
+ "Heartwood Shortbow": {
+  "class": "Bows",
+  "damage": {
+   "physical": [
+    41,
+    76
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 134 Dex",
+  "crit": 5,
+  "aps": 1.25
+ },
+ "Makeshift Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    7,
+    12
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Tense Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    8,
+    15
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 4, 8 Str, 8 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Sturdy Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    11,
+    26
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 10, 13 Str, 13 Dex",
+  "crit": 5,
+  "aps": 1.55
+ },
+ "Varnished Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    12,
+    36
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 19 Str, 19 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Dyad Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    9,
+    37
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 20, 22 Str, 22 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Alloy Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    12,
+    50
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 26, 28 Str, 28 Dex",
+  "crit": 5,
+  "aps": 1.7
+ },
+ "Bombard Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    14,
+    56
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 33, 34 Str, 34 Dex",
+  "crit": 5,
+  "aps": 1.65
+ },
+ "Construct Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    18,
+    72
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 39 Str, 39 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Blackfire Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    20,
+    80
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 45 Str, 45 Dex",
+  "crit": 7,
+  "aps": 1.6
+ },
+ "Piercing Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    21,
+    84
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 50, 49 Str, 49 Dex",
+  "crit": 5,
+  "aps": 1.65
+ },
+ "Cumbrous Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    19,
+    76
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 51 Str, 51 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Dedalian Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    25,
+    99
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 56, 55 Str, 55 Dex",
+  "crit": 7,
+  "aps": 1.55
+ },
+ "Esoteric Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    28,
+    113
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 63 Str, 63 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Taut Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    20,
+    79
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 45, 45 Str, 45 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Robust Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    22,
+    89
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 48, 48 Str, 48 Dex",
+  "crit": 5,
+  "aps": 1.55
+ },
+ "Painted Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    23,
+    92
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 51, 50 Str, 50 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Twin Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    20,
+    82
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 54, 53 Str, 53 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Cannonade Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    23,
+    90
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 59, 58 Str, 58 Dex",
+  "crit": 5,
+  "aps": 1.65
+ },
+ "Bleak Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    27,
+    109
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 62, 60 Str, 60 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Runeforged Makeshift Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    41.25,
+    77
+   ],
+   "cold": [
+    33.75,
+    63
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is cold [45]"
+  ],
+  "requires": "Requires: Level 38, 39 Str, 39 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Runeforged Tense Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    44,
+    83
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 39 Str, 39 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Runemastered Tense Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    62,
+    115
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 54 Str, 54 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Runeforged Sturdy Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    4.65,
+    41.4
+   ],
+   "lightning": [
+    26.35,
+    234.6
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden added maximum lightning damage [67]",
+   "local weapon implicit hidden added minimum lightning damage [0]",
+   "local weapon implicit hidden % base damage is lightning [85]"
+  ],
+  "requires": "Requires: Level 38, 39 Str, 39 Dex",
+  "crit": 7,
+  "aps": 1.6
+ },
+ "Runeforged Dyad Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    32,
+    127
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 40 Str, 40 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Runemastered Dyad Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    43,
+    171
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 63 Str, 63 Dex",
+  "crit": 7,
+  "aps": 1.6
+ },
+ "Runeforged Bombard Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    21,
+    85
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 54 Str, 54 Dex",
+  "crit": 5,
+  "aps": 1.65
+ },
+ "Stout Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    30,
+    119
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 74 Str, 74 Dex",
+  "crit": 5,
+  "aps": 1.55
+ },
+ "Engraved Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    31,
+    124
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 72, 82 Str, 82 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Flexed Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    32,
+    127
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 89 Str, 89 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Gemini Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    28,
+    112
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 89 Str, 89 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Siege Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    29,
+    115
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 79, 89 Str, 89 Dex",
+  "crit": 5,
+  "aps": 1.65
+ },
+ "Desolate Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    33,
+    132
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 89 Str, 89 Dex",
+  "crit": 5,
+  "aps": 1.6
+ },
+ "Elegant Crossbow": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    31,
+    123
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 89 Str, 89 Dex",
+  "crit": 5,
+  "aps": 1.65
+ },
+ "Trarthan Cannon": {
+  "class": "Crossbows",
+  "damage": {
+   "physical": [
+    58,
+    134
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 114 Str, 63 Dex",
+  "crit": 5,
+  "aps": 1.4
+ },
+ "Changeling Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    9,
+    15
+   ]
+  },
+  "hidden": [],
+  "requires": "",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Nettle Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    12,
+    20
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 5, 9 Str, 8 Int",
+  "crit": 11,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Cinderbark Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    12.6,
+    25.2
+   ],
+   "fire": [
+    5.4,
+    10.8
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [30]"
+  ],
+  "requires": "Requires: Level 10, 15 Str, 11 Int",
+  "crit": 8,
+  "aps": 1.2,
+  "range": 1.2
+ },
+ "Familial Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    20,
+    34
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 16, 21 Str, 16 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Frenzied Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    23,
+    38
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 22, 28 Str, 20 Int",
+  "crit": 8,
+  "aps": 1.4,
+  "range": 1.2
+ },
+ "Primal Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    31,
+    46
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 28, 34 Str, 25 Int",
+  "crit": 9,
+  "aps": 1.3,
+  "range": 1.2
+ },
+ "Rabid Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    31,
+    58
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 34, 40 Str, 29 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Vicious Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    43,
+    71
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 40, 47 Str, 34 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Voltfang Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    16.1,
+    91
+   ],
+   "lightning": [
+    6.9,
+    39
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is lightning [30]"
+  ],
+  "requires": "Requires: Level 46, 53 Str, 38 Int",
+  "crit": 8,
+  "aps": 1.3,
+  "range": 1.2
+ },
+ "Lumbering Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    71,
+    107
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 52, 60 Str, 43 Int",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.2
+ },
+ "Roaring Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    57,
+    96
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 58, 66 Str, 47 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Wingbeat Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    45,
+    83
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 74 Str, 52 Int",
+  "crit": 7,
+  "aps": 1.45,
+  "range": 1.2
+ },
+ "Condemned Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    68,
+    113
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 74 Str, 52 Int",
+  "crit": 9,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Howling Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    52,
+    78
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 63 Str, 45 Int",
+  "crit": 9,
+  "aps": 1.3,
+  "range": 1.2
+ },
+ "Fury Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    49,
+    91
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 59, 67 Str, 48 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Cruel Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    62,
+    103
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 63, 72 Str, 51 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Runeforged Changeling Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    91,
+    151
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 45 Str, 32 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Runeforged Nettle Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    51,
+    86
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 45 Str, 32 Int",
+  "crit": 11,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Runemastered Nettle Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    68,
+    114
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 63 Str, 45 Int",
+  "crit": 11,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Runeforged Familial Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    54,
+    91
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 38, 45 Str, 32 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Runemastered Familial Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    73,
+    122
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 55, 63 Str, 45 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Runeforged Vicious Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    123,
+    205
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 65, 74 Str, 52 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Spiny Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    60,
+    99
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 67, 86 Str, 65 Int",
+  "crit": 11,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Ashbark Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    50.4,
+    105
+   ],
+   "fire": [
+    21.6,
+    45
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is fire [30]"
+  ],
+  "requires": "Requires: Level 72, 94 Str, 67 Int",
+  "crit": 8,
+  "aps": 1.2,
+  "range": 1.2
+ },
+ "Fang Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    70,
+    116
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 77, 89 Str, 68 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Fungal Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    59,
+    98
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 96 Str, 70 Int",
+  "crit": 8,
+  "aps": 1.4,
+  "range": 1.2
+ },
+ "Alpha Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    63,
+    94
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 75, 98 Str, 72 Int",
+  "crit": 9,
+  "aps": 1.3,
+  "range": 1.2
+ },
+ "Maji Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    61,
+    114
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 79, 100 Str, 67 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Wildwood Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    67,
+    112
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 70, 98 Str, 72 Int",
+  "crit": 8,
+  "aps": 1.25,
+  "range": 1.2
+ },
+ "Thunder Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    23.1,
+    130.9
+   ],
+   "lightning": [
+    9.9,
+    56.1
+   ]
+  },
+  "hidden": [
+   "local weapon implicit hidden % base damage is lightning [30]"
+  ],
+  "requires": "Requires: Level 77, 102 Str, 72 Int",
+  "crit": 8,
+  "aps": 1.3,
+  "range": 1.2
+ },
+ "Jade Talisman": {
+  "class": "Talismans",
+  "damage": {
+   "physical": [
+    101,
+    151
+   ]
+  },
+  "hidden": [],
+  "requires": "Requires: Level 78, 109 Str, 65 Int",
+  "crit": 5,
+  "aps": 1.1,
+  "range": 1.2
+ }
+}

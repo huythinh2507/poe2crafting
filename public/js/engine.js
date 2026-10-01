@@ -1,5 +1,5 @@
 // Pure crafting logic: no DOM access.
-import { DB, classPool, lichPool, poolFor, corruptionPool, affixOf, essenceModIds, FACTIONS, META_POOLS } from './data.js';
+import { DB, classPool, lichPool, poolFor, corruptionPool, affixOf, essenceModIds, baseStats, FACTIONS, META_POOLS } from './data.js';
 
 export const MAX_AFFIX = { normal: [0, 0], magic: [1, 1], rare: [3, 3] };
 export const MAX_QUALITY = 20;
@@ -12,6 +12,7 @@ const REVEAL_OPTIONS = 3;
 // pool is configurable: Lich mods all share `lichWeight`; normal mods keep their data weights.
 export const ctx = {
   omens: new Set(),
+  pinned: new Set(),   // pinned omens stay armed after use, so a combo (Chaos + Whittling) can be repeated
   settings: { includeNormal: true, lichWeight: 1000 },
 };
 
@@ -63,15 +64,33 @@ const OMEN_BY_ID = Object.fromEntries(OMENS.map(o => [o.id, o]));
 export function toggleOmen(id) {
   const o = OMEN_BY_ID[id];
   if (!o || o.todo) return;
-  if (ctx.omens.has(id)) { ctx.omens.delete(id); return; }
-  if (o.excl) for (const other of OMENS) if (other.excl === o.excl) ctx.omens.delete(other.id);
+  if (ctx.omens.has(id)) { ctx.omens.delete(id); ctx.pinned.delete(id); return; }   // switching an omen off also unpins it
+  if (o.excl) for (const other of OMENS) if (other.excl === o.excl) { ctx.omens.delete(other.id); ctx.pinned.delete(other.id); }
   ctx.omens.add(id);
+}
+
+/** Pin an omen (arming it if needed) so it is NOT used up; click again to unpin (it stays armed for one more use). */
+export function togglePin(id) {
+  const o = OMEN_BY_ID[id];
+  if (!o || o.todo) return;
+  if (ctx.pinned.has(id)) { ctx.pinned.delete(id); return; }
+  if (!ctx.omens.has(id)) toggleOmen(id);
+  ctx.pinned.add(id);
+}
+
+/** Use up one omen (a reveal-phase omen, say) unless it is pinned. */
+export function spendOmen(id) { if (!ctx.pinned.has(id)) ctx.omens.delete(id); }
+
+/** Disarm omens. `keepPinned` leaves the pinned ones (used by "Reset item"). */
+export function clearOmens({ keepPinned = false } = {}) {
+  for (const id of [...ctx.omens]) if (!(keepPinned && ctx.pinned.has(id))) ctx.omens.delete(id);
+  if (!keepPinned) ctx.pinned.clear();
 }
 
 /** Omens (ids) that the next use of `handler` consumes. */
 export const omensConsumedBy = handler => OMENS.filter(o => o.for === baseHandler(handler)).map(o => o.id);
 /** Called by the UI after a successful (non-preview) use of a currency. */
-export function consumeOmens(handler) { for (const id of omensConsumedBy(handler)) ctx.omens.delete(id); }
+export function consumeOmens(handler) { for (const id of omensConsumedBy(handler)) spendOmen(id); }
 
 const rnd = (min, max) => {
   if (Number.isInteger(min) && Number.isInteger(max)) return min + Math.floor(Math.random() * (max - min + 1));
@@ -113,9 +132,25 @@ export function bonus(item) {
   return b;
 }
 
+/** Extra prefix / suffix slots from the base's own implicits (Dusk Ring: +1 prefix, -1 suffix; Penumbra: +2 / -2; Gloam and Tenebrous the reverse). */
+export function implicitSlots(item) {
+  const d = { prefix: 0, suffix: 0 };
+  for (const inst of item.implicits) {
+    const mod = DB.mods.get(inst.id);
+    mod.stats.forEach((st, i) => {
+      const id = DB.raw.stats[st.index]?.id;
+      if (id === 'local_maximum_prefixes_allowed_+') d.prefix += inst.rolls[i];
+      else if (id === 'local_maximum_suffixes_allowed_+') d.suffix += inst.rolls[i];
+    });
+  }
+  return d;
+}
+
 export const maxAffix = item => {
   const [p, s] = MAX_AFFIX[item.rarity];
-  return [p, item.rarity === 'rare' ? s + bonus(item).suffix : s];
+  if (item.rarity !== 'rare') return [p, s];
+  const slots = implicitSlots(item);
+  return [Math.max(0, p + slots.prefix), Math.max(0, s + slots.suffix + bonus(item).suffix)];
 };
 
 export const countAffix = (item, kind) =>
@@ -634,7 +669,8 @@ const HANDLERS = {
     const out = [];
     const reroll = m => { const n = { ...m, ...rollMod(DB.mods.get(m.id)) }; out.push({ op: 'reroll', mod: n }); return n; };
     i.implicits = i.implicits.map(reroll);
-    if (!ctx.omens.has('blessed')) i.mods = i.mods.map(reroll); // Omen of the Blessed: implicits only
+    // Omen of the Blessed: implicits only. A fractured mod is locked against currency, so its values are never rerolled.
+    if (!ctx.omens.has('blessed')) i.mods = i.mods.map(m => (m.fractured ? m : reroll(m)));
     return out;
   },
   poe2_fracture: i => {
@@ -774,6 +810,106 @@ export function flagBlocked(item, m, flag) {
     if (item.mods.some(x => x.fractured)) return 'An item can only have one fractured modifier';
   }
   return null;
+}
+
+// ---- Displayed item stats ------------------------------------------------------------------------------------
+// What the tooltip shows under the item name: a weapon's damage / crit / attack speed, an armour's defences. They start from the
+// base and respond to quality and to the item's LOCAL mods (added damage, % increased physical damage, attack speed, ...).
+//   weapon physical = (base + added flat) x (1 + local increased% / 100) x (1 + quality% / 100)   (quality: 1% MORE per 1%, martial weapons)
+//   weapon elemental = base + added flat                    attacks per second = base x (1 + local attack speed% / 100)
+//   crit chance = base + local "+x% to crit chance"          defence = (base + flat) x (1 + local increased% / 100) x (1 + quality% / 100)
+
+/** Sum of a local stat (by game stat id) over every mod on the item: explicits, implicits and corruption enchants. */
+export function localStat(item, statId) {
+  let total = 0;
+  for (const m of [...item.mods, ...item.implicits, ...item.corruption]) {
+    DB.mods.get(m.id)?.stats.forEach((s, i) => { if (DB.raw.stats[s.index]?.id === statId) total += m.rolls[i] || 0; });
+  }
+  return total;
+}
+
+const DEFENCE_KEYS = { armour: /armour|physical_damage_reduction_rating/, evasion: /evasion/, energyshield: /energy_shield/ };
+const DEFENCE_FLAT = { armour: 'local_base_physical_damage_reduction_rating', evasion: 'local_base_evasion_rating', energyshield: 'local_energy_shield' };
+
+/** Percent-increased bonus for one defence from every local "#% increased Armour / Evasion / Energy Shield (and ...)" mod. */
+function defenceIncrease(item, kind) {
+  let total = 0;
+  for (const m of [...item.mods, ...item.implicits, ...item.corruption]) {
+    DB.mods.get(m.id)?.stats.forEach((s, i) => {
+      const id = DB.raw.stats[s.index]?.id || '';
+      if (/^local_.*_\+%$/.test(id) && DEFENCE_KEYS[kind].test(id)) total += m.rolls[i] || 0;
+    });
+  }
+  return total;
+}
+
+/**
+ * DPS the way the trade site shows it: the DISPLAYED (rounded) damage range, averaged, times the DISPLAYED attacks per second
+ * (2 decimals). 507-837 physical at 1.56 aps = 672 x 1.56 = 1048.32 Physical DPS; 7-349 lightning = 178 x 1.56 = 277.68 Elemental DPS.
+ * `damage` is { physical|fire|cold|lightning|chaos: { final: [min, max] } }.
+ */
+export function weaponDps(damage, aps) {
+  const shownAps = Math.round(aps * 100) / 100;
+  const avg = d => (Math.round(d.final[0]) + Math.round(d.final[1])) / 2;
+  const physical = damage.physical ? Math.round(avg(damage.physical) * shownAps * 100) / 100 : 0;
+  const elemental = Math.round(['fire', 'cold', 'lightning', 'chaos'].reduce((s, el) => s + (damage[el] ? avg(damage[el]) * shownAps : 0), 0) * 100) / 100;
+  return { physical, elemental, total: Math.round((physical + elemental) * 100) / 100 };
+}
+
+/** Final stats for the tooltip, or null if the base has none. Each number carries its base so the UI can mark "augmented". */
+export function itemStats(item) {
+  const base = DB.items.get(item.baseId);
+  const bs = base && baseStats(base);
+  if (!bs) return null;
+  const quality = item.quality || 0;
+
+  if (bs.kind === 'weapon') {
+    const flat = el => [localStat(item, `local_minimum_added_${el}_damage`), localStat(item, `local_maximum_added_${el}_damage`)];
+    const incPhys = localStat(item, 'local_physical_damage_+%');
+    const qualityMult = isMartial(item) ? 1 + quality / 100 : 1;          // quality: 1% more physical damage per 1%
+    const damage = {};
+    for (const el of ['physical', 'fire', 'cold', 'lightning', 'chaos']) {
+      const b = bs.damage[el] || [0, 0], f = flat(el);
+      if (!bs.damage[el] && !f[0] && !f[1]) continue;
+      const raw = [b[0] + f[0], b[1] + f[1]];
+      const final = el === 'physical' ? raw.map(v => v * (1 + incPhys / 100) * qualityMult) : raw;
+      damage[el] = { base: b, final };
+    }
+    const aps = bs.aps * (1 + localStat(item, 'local_attack_speed_+%') / 100);
+    const crit = bs.crit + localStat(item, 'local_critical_strike_chance');
+    const { physical: physDps, elemental: eleDps } = weaponDps(damage, aps);
+    return { kind: 'weapon', damage, crit: { base: bs.crit, final: crit }, aps: { base: bs.aps, final: aps }, range: bs.range, skills: bs.skills,
+      dps: { physical: physDps, elemental: eleDps, total: physDps + eleDps } };
+  }
+
+  if (bs.kind === 'armour') {
+    const defences = [];
+    for (const [key, label] of [['armour', 'Armour'], ['evasion', 'Evasion Rating'], ['energyshield', 'Energy Shield']]) {
+      const b = bs.defences[key];
+      if (!b) continue;
+      const final = (b + localStat(item, DEFENCE_FLAT[key])) * (1 + defenceIncrease(item, key) / 100) * (1 + quality / 100);
+      defences.push({ key, label, base: b, final });
+    }
+    if (bs.defences.ward) defences.push({ key: 'ward', label: 'Runic Ward', base: bs.defences.ward, final: bs.defences.ward });
+    const block = bs.block ? { base: bs.block, final: bs.block * (1 + localStat(item, 'local_block_chance_+%') / 100) } : null;
+    return { kind: 'armour', defences, block };
+  }
+  // Wands, staves and sceptres have no damage of their own. Quality does not touch the weapon: on wands and staves it is the
+  // GRANTED SKILL's quality. Sceptres get no quality effect, and Spirit never scales with quality.
+  const level = grantedSkillLevel(item.ilvl);
+  const isSceptre = item.classId === 56;
+  return {
+    kind: 'caster', skills: bs.skills.map(name => ({ name, level })),
+    skillQuality: isSceptre ? 0 : quality,
+    spirit: bs.spirit ? { base: bs.spirit, final: bs.spirit } : null,
+  };
+}
+
+/** Level of a skill granted by a weapon: set by the item level through the game data's curve (item level thresholds -> level). */
+export function grantedSkillLevel(ilvl) {
+  let level = 1;
+  for (const row of DB.raw.skills.scaling) if (ilvl >= row.item) level = row.gem;
+  return level;
 }
 
 // ---- Formatting ----

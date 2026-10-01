@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
 const errs = []; p.on('pageerror', e => errs.push(e.message));
+p.on('dialog', d => d.accept()); // Change on a crafted item asks before dropping it
 await p.goto('http://localhost:5173/?group=8&class=90&item=3644');
 await p.waitForSelector('#itemBox');
 const snap = () => p.evaluate(async () => { const c = window.__craft, E = await import('/js/engine.js'); return `rarity=${c.S.item.rarity} held=${c.S.method ? c.S.method.handler : 'none'} omens=[${[...E.ctx.omens]}] cursorIcon=${document.querySelector('#cursorIcon').hidden ? 'hidden' : 'visible'} activeChips=${document.querySelectorAll('[data-omen].active').length} activeCurrency=${document.querySelectorAll('.cur.active').length}`; });

@@ -28,6 +28,8 @@ It reads the game data from `public/data` (the same files the website loads), so
 | `CraftingEngine.Desecration.cs` | Bones, unrevealed slots, the Well of Souls reveal, faction omens |
 | `Crafting/CraftContext.cs` | The omen catalogue and the armed-omen state, plus the random number generator |
 
+`CraftingEngine.Stats.cs` computes the stats shown under the item name (weapon damage incl. the elemental split, crit, attack speed, DPS, armour defences, granted skills) from the base, quality and local mods.
+
 Supporting types: `CraftItem.cs` (the item state), `CraftMethod.cs` (a currency, built from the game data),
 `Data/` (loading `data.json` and the weighted mod pools).
 

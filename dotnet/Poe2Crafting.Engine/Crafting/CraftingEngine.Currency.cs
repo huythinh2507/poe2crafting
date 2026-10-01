@@ -110,7 +110,10 @@ public sealed partial class CraftingEngine
         return changes.Count > 0 ? changes : null;
     }
 
-    /// <summary>Divine Orb: reroll the numeric values. The Omen of the Blessed limits it to implicits.</summary>
+    /// <summary>
+    /// Divine Orb: reroll the numeric values of implicits and unfractured mods. A fractured mod is locked against
+    /// currency, so its values never change. The Omen of the Blessed limits the reroll to implicits.
+    /// </summary>
     private List<Change>? Divine(CraftItem item, CraftMethod method)
     {
         var changes = new List<Change>();
@@ -123,7 +126,7 @@ public sealed partial class CraftingEngine
         }
 
         item.Implicits = item.Implicits.Select(Reroll).ToList();
-        if (!Context.Has("blessed")) item.Mods = item.Mods.Select(Reroll).ToList();
+        if (!Context.Has("blessed")) item.Mods = item.Mods.Select(m => m.Fractured ? m : Reroll(m)).ToList();
         return changes;
     }
 

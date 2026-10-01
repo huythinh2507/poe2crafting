@@ -248,6 +248,65 @@ public class OmenTests
         Assert.Equal(5, item.Mods.Count);                                          // all-or-nothing
     }
 
+    // ================= pinned omens: repeat a combo without re-arming =================
+
+    [Fact]
+    public void A_pinned_omen_survives_every_use_and_still_does_its_job()
+    {
+        var e = T.Engine(14);
+        e.Context.TogglePin("whittling");
+        Assert.True(e.Context.Has("whittling"));                                   // pinning arms it
+
+        for (var k = 0; k < 40; k++)
+        {
+            var item = T.FourMods(e);
+            var lowest = item.Mods.Min(m => T.LevelOf(e, m));
+            var result = e.TryCraft(item, T.M("poe2_chaos"));
+            Assert.True(result.Success);
+            Assert.True(e.Context.Has("whittling"));                               // not used up
+            Assert.Equal(lowest, T.LevelOf(e, result.Changes[0].Mod!));
+        }
+    }
+
+    [Fact]
+    public void Unpinned_omens_are_used_up_pinned_ones_are_kept_and_clearing_respects_pins()
+    {
+        var e = T.Engine(15);
+        e.Context.TogglePin("whittling");
+        e.Context.ToggleOmen("erasure_prefix");
+        e.Context.ConsumeOmens("poe2_chaos");
+        Assert.True(e.Context.Has("whittling"));
+        Assert.False(e.Context.Has("erasure_prefix"));                             // unpinned: consumed
+
+        e.Context.ClearOmens(keepPinned: true);                                    // "Reset item"
+        Assert.True(e.Context.Has("whittling"));
+        e.Context.ClearOmens();                                                    // start over
+        Assert.False(e.Context.Has("whittling"));
+        Assert.Empty(e.Context.Pinned);
+    }
+
+    [Fact]
+    public void Switching_a_pinned_omen_off_unpins_it_and_a_second_pin_click_leaves_it_armed_once()
+    {
+        var e = T.Engine();
+        e.Context.TogglePin("light");
+        e.Context.ToggleOmen("light");
+        Assert.False(e.Context.Has("light"));
+        Assert.DoesNotContain("light", e.Context.Pinned);
+
+        e.Context.TogglePin("light");
+        e.Context.TogglePin("light");                                              // unpin
+        Assert.True(e.Context.Has("light"));
+        e.Context.ConsumeOmens("poe2_annulment");
+        Assert.False(e.Context.Has("light"));
+
+        e.Context.TogglePin("erasure_prefix");
+        e.Context.TogglePin("erasure_suffix");                                     // exclusive: the newer pin replaces the old
+        Assert.True(e.Context.Has("erasure_suffix"));
+        Assert.False(e.Context.Has("erasure_prefix"));
+        Assert.DoesNotContain("erasure_prefix", e.Context.Pinned);
+    }
+
     [Fact]
     public void Retired_omens_stay_in_the_catalogue_but_flagged()
     {
