@@ -1,5 +1,5 @@
 import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { CATALYSTS, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
+import { CATALYSTS, isMasterwork, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
   ctx, OMENS, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 const $ = s => document.querySelector(s);
@@ -163,6 +163,12 @@ function getForesee(method) {
 }
 
 function failApply(method) {
+  if (method.handler === 'poe2_socketable' && method.socket && isMasterwork(method.socket)) {
+    const many = S.item.socketed.some((_, i) => socketSlots(S.item, method.socket).includes(i));
+    S.log.unshift({ name: methodName(method), changes: [{ op: 'note', text: many ? 'Click the socket holding the rune to upgrade' : 'No socketed rune can be upgraded (needs a Lesser, Normal or Greater rune that has a next tier)' }] });
+    renderCraft();
+    return;
+  }
   if (method.handler === 'poe2_socketable') {
     const full = S.item.socketed.length >= S.item.sockets;
     S.log.unshift({ name: methodName(method), changes: [{ op: 'note', text: full ? 'All sockets are full: click a socket on the item to replace its augment (socket-bound ones cannot be replaced)' : 'Cannot be socketed here (limit reached or no effect on this item)' }] });
@@ -437,7 +443,7 @@ function methodButton(it, m) {
     const txt = emotionMods(it, m.emotion.item).map(mod => modLines(mod).join(' / ')).join('  —or—  ');
     hint = 'Removes a random modifier and adds a guaranteed crafted one: ' + txt; extra = `<small class="lvl">${esc(txt)}</small>`;
   } else if (m.handler === 'poe2_socketable') {
-    const txt = socketEffect(it, m.socket).join(' / ');
+    const txt = isMasterwork(m.socket) ? 'Upgrades a socketed rune by one tier (Lesser > Normal > Greater > Perfect). Click the socket.' : socketEffect(it, m.socket).join(' / ');
     hint = txt; extra = `<small class="lvl">${esc(txt)}</small>`;
   }
   return `<button class="cur ${S.method?.id === m.id ? 'active' : ''}" data-method="${m.id}" ${usable(it, m) && impl ? '' : 'disabled'} title="${esc(hint)}">${iconTag(m)}<span class="cur-text">${esc(methodName(m))}${extra}</span></button>`;

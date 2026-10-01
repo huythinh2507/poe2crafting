@@ -684,6 +684,7 @@ export function metaEffects(text) {
  */
 export function socketSlots(item, e) {
   if (!socketEffect(item, e)) return [];
+  if (isMasterwork(e)) return masterworkSlots(item);
   const out = [];
   for (let i = 0; i < item.sockets; i++) {
     if (i > item.socketed.length) break;
@@ -703,16 +704,46 @@ function localRuneStats(st) {
   return [{ id, value: st.range[0] }];
 }
 
+// ---- Masterwork Rune: upgrades a socketed rune by one tier (Lesser > Normal > Greater > Perfect), in place ----
+const RUNE_TIERS = ['Lesser ', '', 'Greater ', 'Perfect '];
+const socketableName = e => DB.text(DB.items.get(e.item)?.label);
+export const isMasterwork = e => socketableName(e) === 'Masterwork Rune';
+let SOCKETABLE_BY_ITEM, SOCKETABLE_BY_NAME;
+const socketableOf = itemId => {
+  if (!SOCKETABLE_BY_ITEM) {
+    SOCKETABLE_BY_ITEM = new Map(DB.raw.socketables.entries.map(x => [x.item, x]));
+    SOCKETABLE_BY_NAME = new Map(DB.raw.socketables.entries.filter(x => x.classify?.[0] === 'rune').map(x => [socketableName(x), x]));
+  }
+  return SOCKETABLE_BY_ITEM.get(itemId);
+};
+/** The next-tier rune of the same family ("Greater Iron Rune" > "Perfect Iron Rune"), or null (top tier, or the family has no such tier). */
+export function nextRuneTier(e) {
+  if (!e || e.classify?.[0] !== 'rune') return null;
+  const name = socketableName(e);
+  const m = /^(Lesser |Greater |Perfect )?(.*)$/.exec(name);
+  const tier = RUNE_TIERS.indexOf(m[1] || '');
+  if (tier < 0 || tier >= RUNE_TIERS.length - 1) return null;
+  socketableOf(e.item);
+  return SOCKETABLE_BY_NAME.get(RUNE_TIERS[tier + 1] + m[2]) || null;
+}
+const upgradeOf = (item, rec) => {
+  const next = nextRuneTier(socketableOf(rec.item));
+  return next && socketEffect(item, next) ? next : null;
+};
+const masterworkSlots = item => item.socketed.map((rec, i) => (upgradeOf(item, rec) ? i : -1)).filter(i => i >= 0);
+
 function socket(item, _o, method) {
   const e = method.socket;
   const lines = socketEffect(item, e);
   const slots = socketSlots(item, e);
   if (!lines || !slots.length) return null;
+  const masterwork = isMasterwork(e);
   // UI passes the clicked socket as method.slot; otherwise use the first empty socket (else the first replaceable)
   let slot = method.slot;
   // replacing destroys an augment, so it only happens when a filled socket is clicked explicitly
-  if (slot == null) slot = item.socketed.length < item.sockets ? item.socketed.length : -1;
+  if (slot == null) slot = masterwork ? (slots.length === 1 ? slots[0] : -1) : item.socketed.length < item.sockets ? item.socketed.length : -1;
   if (!slots.includes(slot)) return null;
+  if (masterwork) return upgradeRune(item, slot);
   const name = DB.text(DB.items.get(e.item)?.label);
   const st = socketStat(item, e);
   // local stats (% increased Physical Damage, Armour, ...) change the item's own displayed numbers
@@ -733,6 +764,16 @@ function socket(item, _o, method) {
   if (replaced?.crafted && craftedCount > 1 + bonus(item).crafted)
     out.push(...note(`${replaced.name} is gone: the crafted mods stay, but the item is over its crafted limit (${craftedCount}/${1 + bonus(item).crafted})`));
   return out;
+}
+
+function upgradeRune(item, slot) {
+  const old = item.socketed[slot];
+  const next = upgradeOf(item, old);
+  if (!next) return null;
+  const lines = socketEffect(item, next);
+  const rec = { item: next.item, limit: next.limit, name: socketableName(next), lines, localStats: localRuneStats(socketStat(item, next)), bound: !!next.bound, ...metaEffects(lines.join(' ')) };
+  item.socketed[slot] = rec;
+  return note(`Masterwork Rune: ${old.name} became ${rec.name} (${lines.join(' / ')})`);
 }
 
 // ---- Desecration: bones add an unrevealed slot, the Well of Souls reveals one of 3 options ----
