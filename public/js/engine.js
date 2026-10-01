@@ -485,7 +485,7 @@ function useCatalyst(item, tag) {
 export function catalystScaled(item, mod, value) {
   const c = item?.catalyst;
   if (!c || !c.quality || !groupTags(mod).includes(catalystTagId(c.tag))) return value;
-  return Math.round(value * (100 + c.quality) / 100);
+  return Math.floor(value * (100 + c.quality) / 100 + 1e-9);   // rounds DOWN: +3 needs 34% quality to become +4
 }
 
 // ---- Essences (incl. Alloys) ----

@@ -42,6 +42,10 @@ const R = await p.evaluate(async () => {
   ok('life mod scaled +20%', scaled.startsWith(String(Math.round(30 * 1.2))) || /36/.test(scaled), `${plain} -> ${scaled}`);
   const cold = DB.raw.mods.entries.find(m => (DB.groups.get(m.group)?.tags || []).includes(E.catalystTagId('cold')) && !(DB.groups.get(m.group)?.tags || []).includes(E.catalystTagId('life')));
   ok('non-matching mod untouched', E.modLines(cold, [10]).join() === E.modLines(cold, [10], withLife).join());
+  // rounding is DOWN: +3 needs 34% to become +4
+  const lvlMod = DB.raw.mods.entries.find(m => m.stats.length === 1 && m.stats[0].range[0] <= 3 && m.stats[0].range[1] >= 3 && (DB.groups.get(m.group)?.tags || []).includes(E.catalystTagId('life')));
+  const rr = mk('Iron Ring'); rr.catalyst = { tag: 'life', quality: 33 }; const v33 = E.catalystScaled(rr, lvlMod, 3); rr.catalyst.quality = 34; const v34 = E.catalystScaled(rr, lvlMod, 3); rr.catalyst.quality = 17; const v17 = E.catalystScaled(rr, lvlMod, 3);
+  ok('+3 stays 3 at 17% and 33%, becomes 4 at 34%', v17 === 3 && v33 === 3 && v34 === 4, `${v17} ${v33} ${v34}`);
   // omen: factor + distribution
   ok('factor 20% = x5, 5% = x2, 40% = x5+2.4', E.catalystFactor(20) === 5 && E.catalystFactor(5) === 2 && Math.abs(E.catalystFactor(40) - 7.4) < 1e-9, [E.catalystFactor(20), E.catalystFactor(5), E.catalystFactor(40)].join());
   const trial = (withOmen, n = 3000) => {

@@ -54,6 +54,6 @@ public sealed partial class CraftingEngine
     public double CatalystScaled(CraftItem? item, Mod mod, double value)
     {
         if (item?.Catalyst is not { Quality: > 0 } c || TagId(c.Tag) is not { } tag || !Pools.GroupTags(mod).Contains(tag)) return value;
-        return Math.Round(value * (100 + c.Quality) / 100, MidpointRounding.AwayFromZero);
+        return Math.Floor(value * (100 + c.Quality) / 100 + 1e-9);   // rounds DOWN: +3 needs 34% quality to become +4
     }
 }
