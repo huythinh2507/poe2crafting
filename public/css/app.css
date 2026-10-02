@@ -347,3 +347,109 @@ b.crafted { color: #f4f1ea; }
 /* picker: breathing room below the base list so the page can scroll a little past it */
 #picker { padding-bottom: 80px; }
 .sanctified { color: #e8d27a; font-weight: bold; margin-top: 4px; }
+
+/* sockets overlaid on the item art, laid out like the in-game inventory.
+   .sockets-layer covers the art and is a size container, so 3+ sockets can spread over the art's square area (cqmin). */
+.art-wrap { position: relative; display: block; width: fit-content; max-width: 70%; margin: 4px auto 6px; }
+.art-wrap .item-art { margin: 0; max-width: 100%; }
+.sockets-layer { position: absolute; inset: 0; container-type: size; display: grid; place-content: center; pointer-events: none; }
+.sockets-layer .sockets { margin: 0; display: flex; justify-content: center; align-items: center; gap: 4px; }
+/* 3+ sockets: 2 columns filling the art's square area, each socket centred in its cell */
+.sockets-layer .sockets:is(.n2, .n3, .n4, .n5, .n6):not(.g7) { display: grid; width: 90cqmin; height: 90cqmin;
+  grid-template-columns: repeat(2, minmax(max-content, 1fr)); grid-auto-rows: 1fr; place-items: center; gap: 0; }
+.sockets-layer .sockets.n3:not(.g7) .socket:nth-child(3) { grid-column: 2; }
+/* body armour: the third socket sits centred under the pair */
+.sockets-layer .sockets.g1.n3 .socket:nth-child(3) { grid-column: 1 / -1; }
+/* one-handed weapons are tall and narrow: sockets stack in one column */
+.sockets-layer .sockets.g7 { flex-direction: column; gap: 6px; }
+.sticky .sockets-layer .socket, .sockets-layer .socket { width: clamp(24px, 26cqmin, 40px); height: clamp(24px, 26cqmin, 40px); border-width: 3px; pointer-events: auto;
+  background: radial-gradient(circle at 50% 50%, #000 45%, #1c1612 70%); }
+.sockets-layer .socket:not(.filled) { border-color: #a08a64; box-shadow: inset 0 0 6px #000, 0 0 0 1px #000, 0 1px 4px #000; }
+
+/* a little bigger item art */
+.sticky .item-art { max-height: min(150px, 15vh); }
+
+/* ---- usability pass ---- */
+/* how-it-works banner */
+.howto { display: flex; align-items: center; gap: 10px; margin: 0 0 10px; padding: 8px 8px 8px 12px; background: #2a2218; border: 1px solid #6b5a45; border-left: 3px solid var(--gold); border-radius: 4px; color: #e6dccf; font-size: 14.5px; }
+.howto span { flex: 1; }
+.howto b { color: #fff; }
+.howto-x { background: none; border: 0; color: var(--dim); font-size: 20px; line-height: 1; padding: 0 6px; }
+.howto-x:hover { color: #fff; }
+
+/* tabs + "usable only" toggle share a row */
+.tabbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.usable-toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--dim); font-size: 14px; cursor: pointer; user-select: none; }
+.usable-toggle input { accent-color: var(--gold); }
+
+/* disabled currencies: dimmed and readable instead of struck through, with the reason underneath */
+.cur:disabled { opacity: .6; text-decoration: none; color: var(--dim); }
+.cur:disabled img, .cur:disabled .cur-icon { filter: grayscale(.7) brightness(.8); }
+.cur small.why { display: block; margin-top: 1px; font-size: 11.5px; color: #c9a77a; max-width: 190px; white-space: normal; text-align: left; line-height: 1.25; }
+.subhead.sec { margin: 14px 0 6px; font-size: 12.5px; letter-spacing: .6px; color: var(--gold); }
+.subhead.sec:first-of-type { margin-top: 12px; }
+
+/* clearer hierarchy: section headings, secondary buttons */
+h2 { font-size: 20px; margin: 26px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+#selected h2 { font-size: 20px; }
+.crumbs .chip { padding: 5px 10px; font-size: 14px; }
+.crumbs .chip.chip-base { font-size: 16px; padding: 6px 12px; border-color: var(--gold); }
+.crumbs .btn { padding: 5px 12px; font-size: 12.5px; background: none; border-color: #5c4a35; }
+.crumbs .btn:hover { background: #2a2218; }
+
+/* item level + modifier search */
+.ilvl { display: inline-flex; align-items: center; gap: 8px; font-weight: bold; }
+.mod-tools { margin: 0 0 8px; }
+
+/* item box: less padding around the art */
+.art-wrap, .item-art { margin-top: 0; }
+.art-wrap { margin-bottom: 2px; }
+.item-body .kind small { color: var(--dim); font-size: .85em; }
+
+/* ---- estimated cost panel ---- */
+.spend { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; font-size: 13.5px; display: grid; gap: 6px; }
+.spend-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.spend-title { font: bold 12px "Montserrat", system-ui, sans-serif; text-transform: uppercase; color: var(--dim); letter-spacing: .4px; }
+.spend .div { display: inline-flex; align-items: center; gap: 4px; font-weight: bold; color: #fff; }
+.spend .div img { height: 18px; width: 18px; object-fit: contain; }
+.spend .div small { font-weight: normal; color: var(--dim); }
+.spend-head .div { font-size: 18px; }
+.spend-sub { color: var(--dim); font-size: 12.5px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.spend-sub .div { font-size: 12.5px; color: var(--text); }
+.spend-sub .div img { height: 14px; width: 14px; }
+.spend-warn { color: #e0b46a; font-size: 12.5px; line-height: 1.3; overflow-wrap: anywhere; }
+.spend-toggle { justify-self: start; background: none; border: 0; padding: 0; color: var(--gold); font-size: 13px; }
+.spend-toggle:hover { color: #fff; }
+.spend-rows { display: grid; gap: 2px; max-height: 190px; overflow-y: auto; scrollbar-width: thin; }
+.spend-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 76px 58px; align-items: center; gap: 6px; font-size: 12.5px; }
+.spend-row .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spend-row .ct { color: var(--dim); }
+.spend-row .tt { text-align: right; color: #fff; font-variant-numeric: tabular-nums; }
+.spend-row.unpriced .nm { color: #e0b46a; }
+.price-input { width: 100%; background: #000; border: 1px solid var(--line); border-radius: 3px; padding: 1px 4px; font-size: 12px; text-align: right; }
+.price-input:focus { outline: none; border-color: var(--gold); }
+.spend-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 8px; border-top: 1px solid var(--line); padding-top: 6px; }
+.spend-foot .src { color: var(--dim); font-size: 12px; min-width: 0; overflow-wrap: anywhere; }
+.spend-actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.spend-actions select { background: #000; color: var(--text); border: 1px solid var(--line); border-radius: 3px; padding: 2px 4px; font-size: 12px; max-width: 150px; }
+.spend-msg { color: #c9a77a; font-size: 12.5px; line-height: 1.3; overflow-wrap: anywhere; }
+
+/* ---- cost estimator dialog ---- */
+.est-open { justify-self: start; }
+.est-box { width: min(560px, 94vw); }
+.est-box select, .est-box .input { width: 100%; background: #000; color: var(--text); border: 2px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+.est-box select[size] { padding: 2px; }
+.est-box select option { padding: 3px 6px; }
+.est-box select:focus, .est-box .input:focus { outline: none; border-color: #fff8; }
+.est-label { display: block; margin: 12px 0 4px; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: .4px; }
+.est-note { color: #c4b9ac; font-size: 14px; margin: 8px 0; }
+.est-warn { color: #e0b46a; font-size: 13.5px; margin: 6px 0; }
+.est-run { display: flex; align-items: center; gap: 10px; margin: 14px 0 6px; }
+.est-progress { color: var(--dim); font-size: 13px; }
+.est-table { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: 14px; }
+.est-table th { text-align: right; color: var(--dim); font-weight: normal; font-size: 12px; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.est-table td { text-align: right; padding: 6px; border-bottom: 1px solid #0006; font-variant-numeric: tabular-nums; }
+.est-table td:first-child, .est-table th:first-child { text-align: left; color: var(--dim); }
+.est-table .div { display: inline-flex; align-items: center; gap: 4px; color: #fff; font-weight: bold; }
+.est-table .div img { height: 14px; width: 14px; }
+.est-table .div small { display: none; }

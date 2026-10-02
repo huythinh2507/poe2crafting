@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.mjs",
     "fetch-data": "node scripts/fetch-data.mjs",
-    "prepare-data": "node scripts/prepare-data.mjs"
+    "prepare-data": "node scripts/prepare-data.mjs",
+    "fetch-prices": "node scripts/fetch-prices.mjs"
   },
   "keywords": [],
   "author": "",

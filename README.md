@@ -29,8 +29,21 @@ dotnet run --project dotnet/Poe2Crafting.Cli
 - `public/js/app.js` - UI
 - `public/data/` - game data JSON (from craftofexile.com's data files)
 - `public/assets/items/` - currency icons (`scripts/fetch-icons.mjs`)
+- `public/js/prices.js`, `spend.js`, `estimate.js` - prices, cost tracking, the repeat-until estimator
 - `recon/*.mjs` - Playwright scripts: scraping the reference site and regression tests
   (`node recon/omens.mjs`, `node recon/bugs.mjs`, ... with the server running)
+
+## Cost estimate
+The item column shows an **Estimated cost** in Divine Orbs: every currency, essence, bone, rune and omen you use is counted, Undo takes it back, and
+Reset item moves it into a session total. Prices come from poe.ninja (`public/data/prices-live.json`), then the Craft of Exile snapshot
+(`public/data/prices.json`), then your own override (type a price in the breakdown). Anything with no price counts as 0 and is flagged.
+
+- **Refresh prices** button (needs `npm start`: poe.ninja sends no CORS headers, so the local server fetches for the browser; at most once a minute).
+  The same thing from a terminal: `npm run fetch-prices [league]`.
+- **Updating the deployed site:** GitHub > Actions > *Refresh prices* > *Run workflow* (optionally type a league). It fetches from poe.ninja, commits
+  `public/data/prices-live.json` and redeploys Pages. Manual on purpose, so poe.ninja is only asked when you want fresh prices.
+- **Estimate odds & cost...** repeats the held currency (and armed omens) on copies of your item until a modifier you pick shows up (hundreds of
+  simulated crafts) and reports average / median / 90% uses and cost.
 
 ## Updating data
 ```

@@ -418,7 +418,7 @@ const BONE_BASES = [
 // Extra per-handler requirements that aren't in the site's constraint lists.
 CONSTRAINTS.can_be_rare = i => groupOf(i) !== 11;   // relics stay magic
 CONSTRAINTS.distilled_emotions_base = i => groupOf(i) === 10; // jewels
-const HANDLER_EXTRA = {
+export const HANDLER_EXTRA = {
   poe2_regal: ['can_be_rare'],
   poe2_alchemy: ['can_be_rare'],
   poe2_fracture: ['no_fracture'],

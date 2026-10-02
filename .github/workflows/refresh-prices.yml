@@ -1,0 +1,43 @@
+name: Refresh prices
+
+# Manual only: GitHub > Actions > "Refresh prices" > Run workflow.
+# Downloads current poe.ninja prices into public/data/prices-live.json, commits it and redeploys the site.
+on:
+  workflow_dispatch:
+    inputs:
+      league:
+        description: League name, e.g. "Runes of Aldur" (leave empty for the current challenge league)
+        required: false
+        default: ''
+
+permissions:
+  contents: write   # commit the price file
+  actions: write    # start the Pages deploy (a push made with the built-in token does not trigger it by itself)
+
+concurrency:
+  group: refresh-prices
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch prices from poe.ninja
+        env:
+          LEAGUE: ${{ inputs.league }}
+        run: node scripts/fetch-prices.mjs "$LEAGUE"
+      - name: Commit the new prices and redeploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LEAGUE: ${{ inputs.league }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/prices-live.json
+          git commit -m "Refresh prices (${LEAGUE:-current league})"
+          git push
+          gh workflow run pages.yml --ref "$GITHUB_REF_NAME"

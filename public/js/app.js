@@ -1,6 +1,10 @@
 import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { CATALYSTS, isMasterwork, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
-  ctx, OMENS, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
+import { HANDLER_EXTRA, CATALYSTS, isMasterwork, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
+  ctx, OMENS, omensConsumedBy, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
+
+import { canEstimate, targetOptions, estimate } from './estimate.js';
+import { newSpend, addCount, mergeSpend, costOf, uses } from './spend.js';
+import { PRICES, loadPrices, priceOf, setOverride, refreshPrices, fmtDivine } from './prices.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -18,7 +22,22 @@ const S = {
   lichFaction: 'all',
   tab: 'Currencies', sub: { Essences: 5, Socketables: 'Special runes' }, socketSearch: '',
   foresee: {},        // Hinekora's Lock: method id -> cached preview {item, changes}
+  spend: newSpend(),   // what this item has cost so far (counts of everything used up)
+  prior: newSpend(),   // spend on earlier items this session, so the session total keeps growing across Reset item
+  spendOpen: pref('spendOpen') === '1',   // cost breakdown expanded
+  priceMsg: '', refreshing: false, priceLeague: '',   // "Refresh prices" status line and the league to refresh
+  usableOnly: pref('usableOnly') === '1',   // hide currencies that cannot be used on this item
+  howtoOff: pref('howtoOff') === '1',       // the "how it works" banner was dismissed
 };
+
+// Per-viewer conveniences kept in localStorage; the app works the same when storage is unavailable.
+function pref(key, value) {
+  try {
+    if (value === undefined) return localStorage.getItem('poe2craft.' + key);
+    localStorage.setItem('poe2craft.' + key, value);
+  } catch { /* private window / blocked storage */ }
+  return null;
+}
 
 // ---------- crafting method catalogue (Currencies + Generate from the game data) ----------
 function methodCatalogue() {
@@ -95,7 +114,17 @@ const url = () => {
   history.replaceState(null, '', '?' + p);
 };
 
+// Every undoable step stores the spend as it was before the step; Undo puts it back.
+function pushHistory(snapshot) {
+  snapshot.__spend = structuredClone(S.spend);
+  S.history.push(snapshot);
+}
+const charge = name => addCount(S.spend, name);
+/** Move this item's spend into the session total (a new or reset item starts at 0 again). */
+function bankSpend() { S.prior = mergeSpend(S.prior, S.spend); S.spend = newSpend(); }
+
 function selectBase(base) {
+  bankSpend();
   S.base = base;
   S.item = newItem(base, S.ilvl);
   S.history = []; S.log = []; S.method = null; S.foresee = {}; S.reveal = null;
@@ -117,6 +146,7 @@ function itemHasWork() {
 function pickAgain(level) {
   if (itemHasWork() && !window.confirm('Switching drops this item and its crafting history. Continue?')) return false;
   if (level === 'group') S.cls = null;
+  bankSpend();
   S.base = null; S.item = null;
   S.history = []; S.log = []; S.foresee = {}; S.reveal = null;
   S.method = null; S.openCurrency = null; S.ctx = null; S.modal = null;
@@ -129,6 +159,7 @@ function pickAgain(level) {
 // Reset item: same base, fresh item, nothing held, no omens armed. (The Reset under the item.)
 function reset() {
   if (!S.base) return;
+  bankSpend();
   S.item = newItem(S.base, S.ilvl);
   S.history = []; S.log = []; S.foresee = {}; S.reveal = null;
   S.method = null; S.openCurrency = null;
@@ -139,6 +170,7 @@ function reset() {
 // Start over: also forget the chosen item group, class and base, back to the first screen. (The Reset next to Change.)
 function resetAll() {
   S.group = null; S.cls = null; S.base = null; S.item = null;
+  S.spend = newSpend(); S.prior = newSpend();
   S.history = []; S.log = []; S.foresee = {}; S.reveal = null;
   S.method = null; S.openCurrency = null; S.ctx = null; S.modal = null;
   S.baseSearch = ''; S.modSearch = ''; S.socketSearch = '';
@@ -150,6 +182,8 @@ function resetAll() {
 function undo() {
   const prev = S.history.pop();
   if (!prev) return;
+  if (prev.__spend) S.spend = prev.__spend;
+  delete prev.__spend;
   S.item = prev; S.foresee = {}; S.reveal = null;
   S.log.unshift({ undo: true });
   renderCraft();
@@ -197,8 +231,10 @@ function apply(method, silent) {
     if (!silent) failApply(method);
     return false;
   }
-  S.history.push(snapshot);
+  pushHistory(snapshot);
   S.reveal = null;
+  charge(methodName(method));
+  for (const id of omensConsumedBy(method.handler)) if (ctx.omens.has(id)) charge(OMENS.find(o => o.id === id)?.name);
   consumeOmens(method.handler); // omens are used up by the currency they target
   S.log.unshift({ name: methodName(method), changes });
   if (!silent) renderCraft();
@@ -214,6 +250,7 @@ function openReveal(idx) {
 
 function rerollReveal() {
   if (!S.reveal || S.reveal.rerolled || !ctx.omens.has('echoes')) return;
+  charge(OMENS.find(o => o.id === 'echoes')?.name);
   spendOmen('echoes');
   S.reveal = { ...S.reveal, options: revealOptions(S.item, S.item.unrevealed[S.reveal.idx]), rerolled: true };
   renderCraft();
@@ -222,10 +259,13 @@ function rerollReveal() {
 function pickReveal(i) {
   const r = S.reveal;
   if (!r || !r.options[i]) return;
-  S.history.push(structuredClone(S.item));
+  pushHistory(structuredClone(S.item));
   dropLock();
   const changes = revealMod(S.item, r.idx, r.options[i]);
-  for (const f of ['Amanamu', 'Kurgal', 'Ulaman']) spendOmen(f);
+  for (const f of ['Amanamu', 'Kurgal', 'Ulaman']) {
+    if (ctx.omens.has(f) && factionOmenApplies(S.item)) charge(OMENS.find(o => o.id === f)?.name);
+    spendOmen(f);
+  }
   S.log.unshift({ name: 'Well of Souls reveal', changes });
   S.reveal = null;
   renderCraft();
@@ -238,7 +278,7 @@ function editItem(name, fn) {
   const snapshot = structuredClone(S.item);
   const changes = fn(S.item);
   if (!changes) { S.item = snapshot; renderCraft(); return false; }
-  S.history.push(snapshot);
+  pushHistory(snapshot);
   dropLock();
   S.reveal = null;
   S.log.unshift({ name, changes });
@@ -263,7 +303,7 @@ function addSpecific(modId, desecrated = false) {
 
 function removeSpecific(idx) {
   if (S.item.mods[idx].fractured) return;
-  S.history.push(structuredClone(S.item));
+  pushHistory(structuredClone(S.item));
   dropLock();
   const [m] = S.item.mods.splice(idx, 1);
   S.log.unshift({ name: 'Manual remove', changes: [{ op: 'remove', mod: m }] });
@@ -312,8 +352,8 @@ function renderSelected() {
       <button class="btn" id="reset" title="Start over: clears the item group, class and base you chose">Reset</button>
     </div>
     <div class="row">
-      <input id="modSearch" class="input" placeholder="Search modifiers for this base" value="${esc(S.modSearch)}">
-      <label>iLvl <input id="ilvl" class="input small" type="number" min="1" max="100" value="${S.ilvl}"></label>
+      <label class="ilvl" title="Item level decides which modifier tiers can roll">Item level <input id="ilvl" class="input small" type="number" min="1" max="100" value="${S.ilvl}"></label>
+      <span class="calc-note">Higher item levels unlock higher modifier tiers.</span>
     </div>`;
 }
 
@@ -354,7 +394,7 @@ function renderOmens() {
   const list = relevantOmens();
   if (!list.length) {
     if (S.tab === 'Desecrate') return '';
-    return `<p class="calc-note omens-note">${S.method ? 'No obtainable omens work with this currency.' : 'Select a currency to see the omens that work with it.'}</p>`;
+    return S.method ? '<p class="calc-note omens-note">No obtainable omens work with this currency.</p>' : '';
   }
   const faction = it => !factionOmenApplies(it);
   return '<h3 class="subhead">Omens <small>(consumed by the next use of the currency)</small></h3><div class="chips sub">'
@@ -427,8 +467,36 @@ const usable = (it, m) => checkConstraints(it, m.constraints, m.handler)
   && (m.handler !== 'poe2_distilled_emotions' || emotionApplicable(it, m.emotion.item))
   && (m.handler !== 'poe2_socketable' || socketSlots(it, m.socket).length > 0);
 
+// Plain-language reason for each constraint id, shown when a currency cannot be used on the current item.
+const WHY = {
+  rarity_normal: 'Needs a Normal (white) item', rarity_magic: 'Needs a Magic item', rarity_rare: 'Needs a Rare item',
+  rarity_not_rare: 'Not usable on Rare items', rarity_not_normal: 'Needs a Magic or Rare item',
+  is_modifiable: 'Item is corrupted or sanctified', can_corrupt: 'Item cannot be corrupted', corruptable_base: 'Item is already corrupted or sanctified', not_corrupted: 'Item is corrupted or sanctified',
+  open_affix: 'No open prefix or suffix', minimum_1_explicit: 'Needs at least 1 modifier', minimum_4_explicits: 'Needs 4 or more modifiers',
+  weapon_quality_base: 'Weapons only', caster_quality_base: 'Wands and staves only', armour_quality_base: 'Armour only', flask_base: 'Flasks only',
+  catalyst_base: 'Rings, amulets and belts only', refined_catalyst_base: 'Rings, amulets and belts only',
+  not_maximum_quality: 'Quality is already at the maximum', socketable_base: 'This base has no sockets', not_maximum_sockets: 'Already at the maximum sockets',
+  has_empty_socket: 'No empty socket', ring_or_amulet_base: 'Rings and amulets only', infuser_target: 'Needs 20% or more quality, below its cap', can_be_rare: 'Cannot become Rare', no_fracture: 'Item already has a fractured modifier', not_locked: "Hinekora's Lock is already armed",
+  max_item_level_64: 'Item level must be 64 or lower', not_desecrated: 'Item already has a desecrated modifier', has_unrevealed: 'No unrevealed modifier to reveal',
+  desecration_base: 'Not usable on this item type', desecration_jawbone_base: 'Weapons, quivers and some jewellery only', desecration_rib_base: 'Armour only',
+  desecration_collarbone_base: 'Rings, amulets and belts only', desecration_cranium_base: 'Jewels only', desecration_vertebrae_base: 'Waystones and tablets only',
+};
+
+/** Why `m` cannot be used on `it` right now, or '' when it can. Mirrors usable() but names the first failing rule. */
+function whyNot(it, m) {
+  if (!handlerImplemented(m.handler)) return 'Not simulated yet';
+  for (const c of m.constraints || []) if (!checkConstraints(it, [c])) return WHY[c] || 'Not usable on this item right now';
+  for (const c of HANDLER_EXTRA[handlerBase(m.handler)] || []) if (!checkConstraints(it, [c])) return WHY[c] || 'Not usable on this item right now';
+  if (m.handler === 'poe2_essence' && !essenceApplicable(it, m.essence)) return it.rarity === 'magic' || it.rarity === 'normal' ? 'No mod to add on this item' : 'This essence cannot add a mod here';
+  if (m.handler === 'poe2_distilled_emotions' && !emotionApplicable(it, m.emotion.item)) return 'No modifier to add on this jewel';
+  if (m.handler === 'poe2_socketable' && !socketSlots(it, m.socket).length) return it.sockets ? 'No socket it can go into' : 'This base has no sockets';
+  return '';
+}
+
 function methodButton(it, m) {
   const impl = handlerImplemented(m.handler);
+  const why = whyNot(it, m) || (usable(it, m) ? '' : 'Not usable on this item right now');
+  if (why && S.usableOnly) return '';
   let hint = HINTS[m.handler] || '';
   const cat = /^poe2_(?:refined_)?catalyst_(\w+)$/.exec(m.handler);
   if (cat) hint = `Adds ${CATALYSTS[cat[1]]} quality: scales ${CATALYSTS[cat[1]]}-tagged modifiers. Gain per use falls with item level (item level 100: 1%, sometimes 2%). Max 20%. A different catalyst replaces the quality.`;
@@ -446,7 +514,8 @@ function methodButton(it, m) {
     const txt = isMasterwork(m.socket) ? 'Upgrades a socketed rune by one tier (Lesser > Normal > Greater > Perfect). Click the socket.' : socketEffect(it, m.socket).join(' / ');
     hint = txt; extra = `<small class="lvl">${esc(txt)}</small>`;
   }
-  return `<button class="cur ${S.method?.id === m.id ? 'active' : ''}" data-method="${m.id}" ${usable(it, m) && impl ? '' : 'disabled'} title="${esc(hint)}">${iconTag(m)}<span class="cur-text">${esc(methodName(m))}${extra}</span></button>`;
+  if (why) { extra += `<small class="why">${esc(why)}</small>`; hint = why + (hint ? '. ' + hint : ''); }
+  return `<button class="cur ${S.method?.id === m.id ? 'active' : ''}" data-method="${m.id}" ${why || !usable(it, m) || !impl ? 'disabled' : ''} title="${esc(hint)}">${iconTag(m)}<span class="cur-text">${esc(methodName(m))}${extra}</span></button>`;
 }
 
 function renderSocketList() {
@@ -468,26 +537,61 @@ function currencyButtons(it, methods) {
     const open = S.openCurrency === m.family;
     const active = tiers.some(x => x.id === S.method?.id);
     const usableCount = tiers.filter(x => usable(it, x) && handlerImplemented(x.handler)).length;
+    if (!usableCount && S.usableOnly) continue;
+    const why = usableCount ? '' : whyNot(it, tiers[0]) || 'Not usable on this item right now';
     h += `<div class="cur-wrap ${open ? 'open' : ''}">
-      <button class="cur has-drop ${active ? 'active' : ''}" data-family="${m.family}" ${usableCount ? '' : 'disabled'}>${iconTag(tiers[0])}<span class="cur-text">${esc(methodName(tiers[0]))}</span><span class="caret">▾</span></button>
+      <button class="cur has-drop ${active ? 'active' : ''}" data-family="${m.family}" ${usableCount ? '' : 'disabled'} title="${esc(why)}">${iconTag(tiers[0])}<span class="cur-text">${esc(methodName(tiers[0]))}${why ? `<small class="why">${esc(why)}</small>` : ''}</span><span class="caret">▾</span></button>
       <div class="cur-drop">${tiers.map(x => methodButton(it, x)).join('')}</div></div>`;
   }
   return h;
 }
 
+// The Currencies tab is grouped by what the orb does, so the list can be scanned instead of read.
+const CURRENCY_SECTIONS = [
+  ['Add and change modifiers', /^poe2_(transmutation|augmentation|regal|alchemy|chaos|exalted|annulment|divine)$/],
+  ['Lock, corrupt and sockets', /^(poe2_fracture|poe2_vaal|hinekora_lock|artificer)$/],
+  ['Quality', /^(blacksmith_whetstone|arcanist_etcher|armourer_scrap|glassblower_bauble)$/],
+  ['Vaal infusers', /^poe2_vaal_infuser$/],
+];
+function currencySections(it, methods) {
+  const rest = new Set(methods);
+  let h = '';
+  const add = (title, list) => {
+    const body = currencyButtons(it, list);
+    if (body) h += `<h3 class="subhead sec">${title}</h3><div class="currencies">${body}</div>`;
+  };
+  for (const [title, re] of CURRENCY_SECTIONS) {
+    const list = methods.filter(m => re.test(handlerBase(m.handler)));
+    list.forEach(m => rest.delete(m));
+    add(title, list);
+  }
+  add('Other', [...rest]);
+  return h || '<p class="calc-note">Nothing here can be used on this item right now. Turn off "Usable only" to see why.</p>';
+}
+
+/** One-line "how it works" banner; the viewer can dismiss it for good. */
+function renderHowto() {
+  if (S.howtoOff) return '';
+  const text = S.method
+    ? `Holding <b>${esc(methodName(S.method))}</b>. Click the item on the right to apply it. Press Esc to put it down.`
+    : '<b>How it works:</b> 1. Pick a currency below. 2. Click the item on the right to apply it.';
+  return `<div class="howto"><span>${text}</span><button class="howto-x" data-howto-dismiss title="Hide this tip" aria-label="Hide this tip">&times;</button></div>`;
+}
+
 function renderCurrencies() {
   const it = S.item;
   pruneOmens();
-  let h = '<h2>Choose a crafting method</h2><div class="chips tabs">';
+  let h = '<h2>Choose a crafting method</h2>' + renderHowto();
+  h += '<div class="tabbar"><div class="chips tabs">';
   const tabs = TABS.filter(t => (t !== 'Catalysts' || hasCatalystTab(it)) && (t !== 'Emotions' || emotionMethods(it).length));
   if (!tabs.includes(S.tab)) S.tab = 'Currencies';
   for (const t of tabs) h += `<button class="chip ${S.tab === t ? 'active' : ''}" data-tab="${t}">${t}</button>`;
-  h += '</div>';
+  h += `</div><label class="usable-toggle" title="Hide the currencies that cannot be used on this item right now"><input type="checkbox" id="usableOnly" ${S.usableOnly ? 'checked' : ''}> Usable only</label></div>`;
   if (S.tab === 'Catalysts') {
     h += '<div class="currencies">' + CATALOGUE.filter(m => m.group === 'Catalysts' && (!m.constraints.includes('refined_catalyst_base') || checkConstraints({ ...it, corrupted: false }, ['refined_catalyst_base']))).map(m => methodButton(it, m)).join('') + '</div>';
     h += `<p class="calc-note">${it.catalyst?.quality ? `Current: <b>${esc(it.catalyst.tag)}</b> quality +${it.catalyst.quality}% (max ${catalystCap(it)}%).` : 'No catalyst quality yet.'} Quality scales every modifier with the catalyst's tag. A different catalyst replaces it. Use <b>Omen of Catalysing Exaltation</b> (Currencies, Exalted Orb) to turn the quality into a higher chance of that tag.</p>`;
   } else if (S.tab === 'Currencies') {
-    h += '<div class="currencies">' + currencyButtons(it, CATALOGUE.filter(m => m.group === S.tab)) + '</div>';
+    h += currencySections(it, CATALOGUE.filter(m => m.group === S.tab));
   } else if (S.tab === 'Desecrate') {
     h += '<div class="currencies">' + CATALOGUE.filter(m => m.group === 'Desecrate').map(m => methodButton(it, m)).join('') + '</div>';
     h += `<div class="row settings">
@@ -618,6 +722,15 @@ function statLines(st) {
   return out;
 }
 
+// sockets sit on top of the item art like the in-game inventory; no art = plain row below
+const artWithSockets = (art, sockets) => (art && sockets ? `<div class="art-wrap">${art}<div class="sockets-layer">${sockets}</div></div>` : art + sockets);
+
+// Weapon hand-ness is not obvious from the class name (Talismans, Quarterstaves, ...), so say it on the item.
+const kindNote = it => {
+  const g = DB.classes.get(it.classId)?.group;
+  return g === 8 ? ' <small>· Two-handed</small>' : g === 7 ? ' <small>· One-handed</small>' : '';
+};
+
 function renderTooltip() {
   const it = S.item, b = S.base;
   TARGETS = removalTargets();
@@ -634,7 +747,7 @@ function renderTooltip() {
   if (it.quality) props.unshift(`<div class="prop">Quality: <b class="q">+${it.quality}%</b></div>`);
   if (it.catalyst?.quality) props.unshift(`<div class="prop">Quality (${esc(it.catalyst.tag[0].toUpperCase() + it.catalyst.tag.slice(1))} Modifiers): <b class="q">+${it.catalyst.quality}%</b></div>`);
   // sockets drawn as rings; filled ones show the socketed rune / soul core art
-  const socketRow = it.sockets ? `<div class="sockets">${Array.from({ length: it.sockets }, (_, i) => {
+  const socketRow = it.sockets ? `<div class="sockets n${Math.min(it.sockets, 6)} g${DB.classes.get(it.classId)?.group}">${Array.from({ length: it.sockets }, (_, i) => {
     const s = it.socketed[i];
     const targetable = S.method?.handler === 'poe2_socketable' && socketSlots(it, S.method.socket).includes(i);
     const cls = `socket ${s ? 'filled' : ''} ${s?.bound ? 'bound' : ''} ${targetable ? 'target' : ''}`;
@@ -653,9 +766,8 @@ function renderTooltip() {
     <div class="item ${it.rarity} ${S.method ? 'apply' : ''}" id="itemBox" title="${S.method ? 'Click to apply ' + esc(methodName(S.method)) : 'Select a crafting method'}">
       <div class="item-head">${esc(name)}${sub ? `<span class="sub">${esc(sub)}</span>` : ''}</div>
       <div class="item-body">
-        ${baseArt(b, 'item-art')}
-        ${socketRow}
-        <div class="kind">${esc(DB.text(S.cls.label))}</div>
+        ${artWithSockets(baseArt(b, 'item-art'), socketRow)}
+        <div class="kind">${esc(DB.text(S.cls.label))}${kindNote(it)}</div>
         ${props.join('')}
         <div class="sep"></div>
         <div>Item Level: <b>${it.ilvl}</b></div>
@@ -675,13 +787,184 @@ function changeHtml(c) {
   return `<div class="${c.op}">${OP_LABEL[c.op]}: ${modLines(DB.mods.get(c.mod.id), c.mod.rolls).map(esc).join(' / ')}</div>`;
 }
 
+// ---------- estimated cost ----------
+const DIVINE_ICON = 'assets/items/Currency/CurrencyModValues.webp';
+const timeAgo = iso => {
+  const min = Math.max(0, Math.round((Date.now() - new Date(iso)) / 60000));
+  return min < 2 ? 'just now' : min < 90 ? min + ' min ago' : min < 2880 ? Math.round(min / 60) + ' h ago' : Math.round(min / 1440) + ' days ago';
+};
+const divHtml = v => `<span class="div"><img src="${DIVINE_ICON}" alt="" onerror="this.remove()">${fmtDivine(v)}<small> div</small></span>`;
+const SOURCE_LABEL = { override: 'your own price', live: 'poe.ninja', coe: 'Craft of Exile snapshot' };
+
+function spendRow(r) {
+  const tip = r.source ? 'Price source: ' + SOURCE_LABEL[r.source] : 'No price known: counted as 0. Type one to include it.';
+  return `<div class="spend-row ${r.source ? '' : 'unpriced'}" title="${tip}">
+    <span class="nm">${esc(r.name)}</span><span class="ct">×${r.count}</span>
+    <input class="price-input" type="number" min="0" step="any" data-price-name="${esc(r.name)}" value="${r.source ? +r.each.toPrecision(4) : ''}" placeholder="?" aria-label="Price of ${esc(r.name)} in Divine Orbs">
+    <span class="tt">${fmtDivine(r.total)}</span></div>`;
+}
+
+function renderSpend() {
+  const el = $('#spend');
+  if (!el) return;
+  const item = costOf(S.spend), session = costOf(mergeSpend(S.prior, S.spend));
+  const n = uses(S.spend), hasPrior = uses(S.prior) > 0;
+  const live = PRICES.live;
+  const unpriced = item.unpriced;
+  const warn = unpriced.length
+    ? `<div class="spend-warn" title="${esc(unpriced.join(', '))}">⚠ ${unpriced.length} unpriced item${unpriced.length > 1 ? 's' : ''} counted as 0: ${esc(unpriced.slice(0, 3).join(', '))}${unpriced.length > 3 ? '…' : ''}</div>`
+    : '';
+  const source = live ? `poe.ninja · ${esc(live.league)} · ${timeAgo(live.fetchedAt)}` : 'Craft of Exile snapshot (no live prices saved yet)';
+  const leagueOption = l => `<option ${(S.priceLeague || live.league) === l ? 'selected' : ''}>${esc(l)}</option>`;
+  const select = live?.leagues?.length ? `<select id="priceLeague" aria-label="League">${live.leagues.map(leagueOption).join('')}</select>` : '';
+  const toggle = n ? `<button class="spend-toggle" data-spend-toggle aria-expanded="${S.spendOpen}">${S.spendOpen ? '▾' : '▸'} Breakdown</button>` : '';
+  const rows = n && S.spendOpen ? `<div class="spend-rows">${item.rows.map(spendRow).join('')}</div>` : '';
+  const clear = hasPrior || n ? '<button class="mini" id="clearSpend" title="Set this item and the session total back to 0">Clear</button>' : '';
+  el.innerHTML = `
+    <div class="spend-head"><span class="spend-title">Estimated cost</span>${divHtml(item.total)}</div>
+    <button class="mini est-open" id="openEstimate" title="Simulate repeating the selected currency until you get a modifier, and price it">Estimate odds &amp; cost…</button>
+    <div class="spend-sub">${n} use${n === 1 ? '' : 's'} on this item${hasPrior ? ` · session total ${divHtml(session.total)}` : ''}</div>
+    ${warn}${toggle}${rows}
+    <div class="spend-foot">
+      <span class="src" title="Estimates in Divine Orbs: market values, not guaranteed trade prices.">${source}</span>
+      <span class="spend-actions">${select}
+        <button class="mini" id="refreshPrices" ${S.refreshing ? 'disabled' : ''} title="Download current prices from poe.ninja (needs the local server)">${S.refreshing ? 'Refreshing…' : 'Refresh prices'}</button>${clear}
+      </span>
+    </div>
+    ${S.priceMsg ? `<div class="spend-msg">${esc(S.priceMsg)}</div>` : ''}`;
+}
+
+// ---------- cost estimator ("repeat until I get ...") ----------
+// S.est = { search, group, maxTier, running, progress, result, error, abort } while the dialog is open.
+const fmtInt = n => Math.round(n).toLocaleString('en-US');
+const fmtPct = p => (p >= 0.1 ? (p * 100).toFixed(1) : p >= 0.001 ? (p * 100).toFixed(2) : (p * 100).toFixed(3)) + '%';
+
+function openEstimate() {
+  if (!S.item) return;
+  S.est = { search: '', group: null, maxTier: 1, running: false, progress: null, result: null, error: '', abort: null };
+  renderEstimator();
+}
+function closeEstimate() {
+  S.est?.abort?.abort();
+  S.est = null;
+  renderEstimator();
+}
+
+const estOptions = () => targetOptions(S.item);
+function estTargetList() {
+  const q = S.est.search.trim().toLowerCase();
+  const opts = estOptions().filter(o => !q || o.label.toLowerCase().includes(q));
+  if (!opts.length) return '<option disabled>No matching modifier</option>';
+  return opts.map(o => `<option value="${o.group}" ${S.est.group === o.group ? 'selected' : ''}>${esc(o.label)} (${o.affix})</option>`).join('');
+}
+function estTierList() {
+  const o = estOptions().find(x => x.group === S.est.group);
+  if (!o) return '<option>Pick a modifier first</option>';
+  let h = '';
+  for (let t = 1; t <= o.tiers; t++) {
+    const label = t === 1 ? 'Tier 1 (best)' : t === o.tiers ? 'Any tier' : `Tier ${t} or better`;
+    h += `<option value="${t}" ${S.est.maxTier === t ? 'selected' : ''}>${label}</option>`;
+  }
+  return h;
+}
+
+function estResultHtml(r) {
+  if (r.alreadyThere) return '<p class="est-note">The item already has that modifier at that tier. Pick a different target.</p>';
+  if (!r.hits) {
+    return `<p class="est-note">No success in ${r.trials} simulated crafts${r.stuck ? `: the currency stopped working on the item (${r.stuck} runs)` : ' within the safety limit of 20,000 uses'}. It may be impossible with this setup.</p>`;
+  }
+  const warn = [];
+  if (r.capped) warn.push(`${r.capped} run${r.capped > 1 ? 's' : ''} hit the 20,000-use limit and are left out, so the real average is higher.`);
+  if (r.stuck) warn.push(`${r.stuck} run${r.stuck > 1 ? 's' : ''} ran out of room for the currency and are left out.`);
+  if (!r.priceKnown) warn.push('This currency has no price, so its cost is counted as 0.');
+  return `<table class="est-table">
+      <tr><th></th><th>Average</th><th>Median</th><th>90% of the time within</th></tr>
+      <tr><td>Uses</td><td>${fmtInt(r.uses.mean)}</td><td>${fmtInt(r.uses.median)}</td><td>${fmtInt(r.uses.p90)}</td></tr>
+      <tr><td>Cost (div)</td><td>${divHtml(r.cost.mean)}</td><td>${divHtml(r.cost.median)}</td><td>${divHtml(r.cost.p90)}</td></tr>
+    </table>
+    <p class="est-note">About ${fmtPct(r.hitPerUse)} per use. Based on ${r.trials} simulated crafts${r.aborted ? ' (stopped early)' : r.trials < 300 ? ' (time limit reached)' : ''}, each starting from the item as it is now${r.omenNames.length ? ' with ' + esc(r.omenNames.join(', ')) + ' armed' : ''}. Prices are estimates.</p>
+    ${warn.map(w => `<p class="est-warn">⚠ ${esc(w)}</p>`).join('')}`;
+}
+
+function renderEstimator() {
+  const el = $('#estimator');
+  if (!el) return;
+  const e = S.est;
+  if (!e) { el.innerHTML = ''; return; }
+  const m = S.method;
+  let body;
+  if (!m) body = '<p class="est-note">First pick the currency to repeat (click it in the list) and arm any omens, then open this again.</p>';
+  else if (!canEstimate(m)) body = `<p class="est-note"><b>${esc(methodName(m))}</b> needs a choice on every use (a socket or a reveal option), so it cannot be repeated automatically.</p>`;
+  else {
+    const omens = [...ctx.omens].map(id => OMENS.find(o => o.id === id)?.name).filter(Boolean);
+    const ready = e.group != null && !e.running;
+    body = `
+      <p class="est-note">Repeats <b>${esc(methodName(m))}</b>${omens.length ? ' with ' + esc(omens.join(', ')) : ''} on a copy of your current item until it has the modifier you want.</p>
+      <label class="est-label" for="estSearch">Modifier I want</label>
+      <input id="estSearch" class="input" placeholder="Search modifiers" value="${esc(e.search)}" autocomplete="off">
+      <select id="estTarget" size="7" aria-label="Modifier I want">${estTargetList()}</select>
+      <label class="est-label" for="estTier">Good enough if it is</label>
+      <select id="estTier">${estTierList()}</select>
+      <div class="est-run">
+        <button class="btn" id="estRun" ${ready ? '' : 'disabled'}>${e.running ? 'Running…' : 'Run estimate'}</button>
+        ${e.running ? '<button class="mini" id="estCancel">Stop</button>' : ''}
+        <span class="est-progress">${e.progress ? `${e.progress.done} / ${e.progress.trials} crafts` : ''}</span>
+      </div>
+      ${e.error ? `<p class="est-warn">${esc(e.error)}</p>` : ''}
+      ${e.result ? estResultHtml(e.result) : ''}`;
+  }
+  el.innerHTML = `<div class="modal-back" data-est-close><div class="modal est-box" id="estBox" role="dialog" aria-label="Estimate cost">
+    <h3>Estimate cost</h3>${body}
+    <div class="modal-actions"><button class="btn" data-est-close>Close</button></div></div></div>`;
+}
+
+async function runEstimate() {
+  const e = S.est;
+  if (!e || e.running || e.group == null || !S.method) return;
+  e.abort = new AbortController();
+  e.running = true; e.result = null; e.error = ''; e.progress = null;
+  renderEstimator();
+  try {
+    const result = await estimate({
+      item: S.item, method: S.method, methodName: methodName(S.method), target: { group: e.group, maxTier: e.maxTier },
+      signal: e.abort.signal,
+      onProgress: p => { if (S.est === e) { e.progress = p; const n = $('#estBox .est-progress'); if (n) n.textContent = `${p.done} / ${p.trials} crafts`; } },
+    });
+    if (S.est !== e) return;   // dialog closed meanwhile
+    e.result = result;
+  } catch (err) {
+    if (S.est === e) e.error = err.message;
+  }
+  if (S.est === e) { e.running = false; renderEstimator(); }
+}
+
+async function doRefreshPrices() {
+  if (S.refreshing) return;
+  S.refreshing = true; S.priceMsg = ''; renderSpend();
+  try {
+    const doc = await refreshPrices(S.priceLeague || undefined);
+    S.priceLeague = doc.league;
+    S.priceMsg = `Updated ${Object.keys(doc.byName).length} prices (${doc.league}).`;
+  } catch (e) {
+    S.priceMsg = e.message;
+  }
+  S.refreshing = false; renderSpend();
+}
+
+function clearSpend() {
+  S.spend = newSpend(); S.prior = newSpend();
+  for (const h of S.history) delete h.__spend;   // earlier steps no longer carry a spend to restore
+  renderSpend();
+}
+
 function renderLog() {
   const items = S.log.slice(0, 30).map(l => {
     if (l.undo) return '<div class="entry reroll">Undo</div>';
     const lines = l.changes.map(changeHtml).join('');
     return `<div class="entry"><b>${esc(l.name)}</b>${lines}</div>`;
   }).join('');
-  $('#log').innerHTML = `<h3>Last changes</h3>${items || '<div class="empty">Nothing yet.</div>'}`;
+  $('#log').hidden = !items;   // nothing to show before the first craft
+  $('#log').innerHTML = `<h3>Last changes</h3>${items}`;
 }
 
 function renderPool() {
@@ -970,7 +1253,8 @@ function modalAction(action) {
 function renderCraft() {
   if (!S.item) { $('#craft').hidden = true; $('#cursorIcon') && ($('#cursorIcon').hidden = true); return; }
   $('#craft').hidden = false;
-  renderCurrencies(); renderTooltip(); renderLog(); renderPool();
+  const ms = $('#modSearch'); if (ms && ms.value !== S.modSearch && document.activeElement !== ms) ms.value = S.modSearch;
+  renderCurrencies(); renderTooltip(); renderSpend(); renderLog(); renderPool();
   updateCursorIcon(); renderOverlay();
 }
 
@@ -998,9 +1282,27 @@ document.addEventListener('click', e => {
     modalAction(modalTarget.dataset.modal); return;
   }
   if (S.openCurrency && !e.target.closest('.cur-wrap')) { S.openCurrency = null; renderCurrencies(); }
-  const t = e.target.closest('[data-group],[data-class],[data-base],[data-crumb],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-omen],[data-omen-off],[data-pin],[data-reveal],[data-pick],[data-fam],[data-pfam],[data-psec],[data-lichf],[data-add],[data-addref],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#itemBox');
+  const t = e.target.closest('[data-group],[data-class],[data-base],[data-crumb],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-howto-dismiss],#openEstimate,#estRun,#estCancel,[data-est-close],[data-spend-toggle],#refreshPrices,#clearSpend,[data-omen],[data-omen-off],[data-pin],[data-reveal],[data-pick],[data-fam],[data-pfam],[data-psec],[data-lichf],[data-add],[data-addref],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#itemBox');
   if (!t) return;
-  if (t.dataset.group) {
+  if (t.id === 'openEstimate') {
+    openEstimate();
+  } else if (t.id === 'estRun') {
+    runEstimate();
+  } else if (t.id === 'estCancel') {
+    S.est?.abort?.abort();
+  } else if (t.dataset.estClose != null) {
+    // the backdrop closes the dialog; clicks on the dialog's own content do not
+    if (t.classList.contains('modal-back') && e.target.closest('#estBox')) return;
+    closeEstimate();
+  } else if (t.dataset.spendToggle != null) {
+    S.spendOpen = !S.spendOpen; pref('spendOpen', S.spendOpen ? '1' : '0'); renderSpend();
+  } else if (t.id === 'refreshPrices') {
+    doRefreshPrices();
+  } else if (t.id === 'clearSpend') {
+    clearSpend();
+  } else if (t.dataset.howtoDismiss != null) {
+    S.howtoOff = true; pref('howtoOff', '1'); renderCurrencies();
+  } else if (t.dataset.group) {
     S.group = +t.dataset.group; S.cls = null; S.base = null; S.item = null; url(); renderAll();
   } else if (t.dataset.class) {
     S.cls = DB.classes.get(+t.dataset.class); S.base = null; S.item = null; S.baseSearch = ''; url(); renderAll();
@@ -1078,9 +1380,15 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   if (e.target.id === 'baseSearch') { S.baseSearch = e.target.value; renderBases(); }
   else if (e.target.id === 'socketSearch') { S.socketSearch = e.target.value; renderSocketList(); }
+  else if (e.target.id === 'estSearch' && S.est) { S.est.search = e.target.value; $('#estTarget').innerHTML = estTargetList(); }
   else if (e.target.id === 'modSearch') { S.modSearch = e.target.value; if (S.item) renderPool(); }
 });
 document.addEventListener('change', e => {
+  if (e.target.id === 'estTarget' && S.est) { S.est.group = +e.target.value; S.est.maxTier = 1; S.est.result = null; renderEstimator(); }
+  if (e.target.id === 'estTier' && S.est) { S.est.maxTier = +e.target.value; S.est.result = null; }
+  if (e.target.id === 'priceLeague') { S.priceLeague = e.target.value; S.priceMsg = 'Press Refresh prices to load ' + e.target.value + '.'; renderSpend(); }
+  if (e.target.dataset?.priceName) { const v = e.target.value.trim(); setOverride(e.target.dataset.priceName, v === '' ? null : +v); renderSpend(); }
+  if (e.target.id === 'usableOnly') { S.usableOnly = e.target.checked; pref('usableOnly', S.usableOnly ? '1' : '0'); renderCurrencies(); }
   if (e.target.id === 'includeNormal') { ctx.settings.includeNormal = e.target.checked; renderCraft(); }
   if (e.target.id === 'lichWeight') { ctx.settings.lichWeight = Math.max(1, +e.target.value || 1000); renderCraft(); }
   if (e.target.id === 'ilvl') {
@@ -1099,6 +1407,7 @@ document.addEventListener('pointermove', e => {
   } else el.hidden = true;
 });
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && S.est) { closeEstimate(); return; }
   if (e.key === 'Escape' && (S.ctx || S.modal)) { S.ctx = null; S.modal = null; renderOverlay(); return; }
   if (e.key === 'Escape' && S.method) { S.method = null; S.openCurrency = null; renderCraft(); return; }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !/INPUT/.test(document.activeElement?.tagName)) { e.preventDefault(); undo(); }
@@ -1107,12 +1416,13 @@ document.addEventListener('keydown', e => {
 // ---------- boot ----------
 (async function boot() {
   await loadData();
+  await loadPrices();
   CATALOGUE = methodCatalogue();
-  $('#app').innerHTML = '<div id="picker"></div><div id="selected"></div><div id="craft" hidden><div class="layout"><div class="main-col"><div id="currencies"></div><h2>Modifiers</h2><div id="pool"></div></div><div class="sticky"><div id="tooltip"></div><div id="log" class="log"></div></div></div></div><div id="cursorIcon" hidden><img alt="" hidden><span></span></div><div id="overlay"></div>';
+  $('#app').innerHTML = '<div id="picker"></div><div id="selected"></div><div id="craft" hidden><div class="layout"><div class="main-col"><div id="currencies"></div><h2>Modifiers</h2><div class="row mod-tools"><input id="modSearch" class="input" placeholder="Search modifiers for this base"></div><div id="pool"></div></div><div class="sticky"><div id="tooltip"></div><div id="spend" class="spend"></div><div id="log" class="log"></div></div></div></div><div id="cursorIcon" hidden><img alt="" hidden><span></span></div><div id="overlay"></div><div id="estimator"></div>';
   const p = new URLSearchParams(location.search);
   if (p.get('group')) S.group = +p.get('group');
   if (p.get('class')) S.cls = DB.classes.get(+p.get('class'));
   renderAll();
   if (p.get('item') && DB.items.get(+p.get('item'))) selectBase(DB.items.get(+p.get('item')));
-  window.__craft = { S, DB, ctx, apply, renderCraft, openReveal, pickReveal, CATALOGUE, allMethods, findMethod }; // debug handle
+  window.__craft = { openEstimate, undo, costOf, uses, charge, PRICES, priceOf, setOverride, refreshPrices, fmtDivine, selectBase, renderAll, S, DB, ctx, apply, renderCraft, openReveal, pickReveal, CATALOGUE, allMethods, findMethod }; // debug handle
 })();
