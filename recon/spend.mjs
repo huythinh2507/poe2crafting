@@ -11,7 +11,7 @@ await p.waitForFunction(() => window.__craft);
 
 const r = await p.evaluate(async () => {
   const C = window.__craft, { S, DB, ctx, CATALOGUE, allMethods, apply, priceOf, costOf, uses } = C;
-  const E = await import('/js/engine.js');
+  const E = await import('/js/engine.js'), D = await import('/js/data.js');
   const out = {};
   const bow = () => {
     const c = [...DB.classes.values()].find(c => DB.text(c.label) === 'Bows');
@@ -54,6 +54,16 @@ const r = await p.evaluate(async () => {
   document.querySelector('#resetItem').click();
   out.reset_item_zero = uses(S.spend) === 0; out.session_has = uses(S.prior) === itemUses;
   out.session_cost = costOf(S.prior).total; out.itemTotal = itemTotal;
+  // 6b. a catalyst at its quality cap does nothing, so it is refused and costs nothing; a different catalyst still works
+  const ring = [...DB.classes.values()].find(c => DB.text(c.label) === 'Rings'); S.group = ring.group; S.cls = ring;
+  C.selectBase(D.basesOfClass(ring.id)[0]); S.item.rarity = 'rare';
+  const cat = h => CATALOGUE.find(m => m.handler === h);
+  S.item.catalyst = { tag: 'attack', quality: E.catalystCap(S.item) };
+  const spentBefore = uses(S.spend);
+  out.cap_refused = apply(cat('poe2_catalyst_reaver'), true) === false && uses(S.spend) === spentBefore && S.item.catalyst.quality === E.catalystCap(S.item);
+  out.cap_other = apply(cat('poe2_catalyst_flesh'), true) && S.item.catalyst.tag === 'life' && uses(S.spend) === spentBefore + 1;
+  out.cap_reason = (E.catalystMaxed(S.item, 'poe2_catalyst_flesh') === false);
+  bow();   // back to the bow for the desecration check
   // 7. desecration: bone + Abyssal Echoes reroll + faction omen at the reveal
   C.selectBase(S.base); S.item.rarity = 'rare';
   const bone = CATALOGUE.find(m => m.handler.startsWith('poe2_desecrate') && E.checkConstraints(S.item, m.constraints, m.handler));
@@ -72,6 +82,8 @@ ok(r.pinned_twice === 2, 'pinned omen charged on every use (' + r.pinned_twice +
 ok(r.undo_restored, 'undo restores the spend');
 ok(r.unpriced.includes('Stone Rune') && r.unpriced_zero, 'unpriced item costs 0 and is listed');
 ok(r.reset_item_zero && r.session_has && near(r.session_cost, r.itemTotal), 'Reset item banks spend into session total (' + r.session_cost + ')');
+ok(r.cap_refused, 'catalyst at the quality cap is refused and not charged');
+ok(r.cap_other && r.cap_reason, 'a different catalyst still replaces it and is charged');
 ok(r.bone_ok && r.reveal_counts[r.bone] === 1, 'bone charged: ' + r.bone);
 ok(r.reveal_counts['Omen of Abyssal Echoes'] === 1 && r.reveal_counts['Omen of the Blackblooded'] === 1, 'reveal omens charged: ' + JSON.stringify(r.reveal_counts));
 ok(errs.length === 0, 'no page errors ' + errs.join('; '));

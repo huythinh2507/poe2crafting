@@ -433,7 +433,14 @@ CONSTRAINTS.infuser_target = i => infuserQuality(i) >= MAX_QUALITY && infuserQua
 CONSTRAINTS.not_corrupted = i => !i.corrupted && !i.sanctified;
 CONSTRAINTS.not_locked = i => !i.lock;
 
-export const checkConstraints = (item, list = [], handler) =>
+/** A catalyst of the type the item already carries does nothing once the quality is at the cap (a different type still replaces it). */
+export const catalystMaxed = (item, handler) => {
+  const m = /^poe2_(?:refined_)?catalyst_(\w+)$/.exec(handler || '');
+  const tag = m && CATALYSTS[m[1]];
+  return !!tag && item.catalyst?.tag === tag && item.catalyst.quality >= catalystCap(item);
+};
+
+export const checkConstraints = (item, list = [], handler) => !catalystMaxed(item, handler) &&
   [...list, ...(HANDLER_EXTRA[handler ? baseHandler(handler) : ''] || (handler?.startsWith('spawn_') ? ['not_corrupted'] : []))]
     .every(c => (CONSTRAINTS[c] ? CONSTRAINTS[c](item) : false));
 
@@ -1188,7 +1195,9 @@ export function grantedSkillLevel(ilvl) {
 // ---- Formatting ----
 
 /** Roll-less family title, e.g. "#% increased maximum Life". */
-export const modTemplate = mod => [...new Set(mod.stats.map(s => DB.text(s.label)))].join(' / ');
+// Time-Lost jewel radius modifiers read "Small / Notable Passive Skills in Radius also grant ..." (scope from poe2db, see scripts/fetch-jewel-radius.mjs).
+const radiusText = (mod, text) => (DB.jewelRadius?.[mod.key] ? `${DB.jewelRadius[mod.key]} Passive Skills in Radius also grant ${text}` : text);
+export const modTemplate = mod => radiusText(mod, [...new Set(mod.stats.map(s => DB.text(s.label)))].join(' / '));
 
 /** Text lines for a mod. rolls omitted = show full ranges (pool view). */
 export function modLines(mod, rolls, item) {
@@ -1205,7 +1214,7 @@ export function modLines(mod, rolls, item) {
   const label0 = labels[0] || '';
   if (new Set(labels).size === 1 && mod.stats.length > 1 && (label0.match(/#/g) || []).length === mod.stats.length) {
     let k = 0;
-    return [label0.replace(/#/g, () => fmt(mod.stats[k], k++))];
+    return [radiusText(mod, label0.replace(/#/g, () => fmt(mod.stats[k], k++)))];
   }
-  return mod.stats.map((s, i) => labels[i].replace('#', fmt(s, i)));
+  return mod.stats.map((s, i) => radiusText(mod, labels[i].replace('#', fmt(s, i))));
 }

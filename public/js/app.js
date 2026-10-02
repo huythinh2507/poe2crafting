@@ -1,10 +1,10 @@
-import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds } from './data.js';
-import { HANDLER_EXTRA, CATALYSTS, isMasterwork, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
+import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds, tagLabel } from './data.js';
+import { HANDLER_EXTRA, catalystMaxed, CATALYSTS, catalystTagId, isMasterwork, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
   ctx, OMENS, omensConsumedBy, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 import { canEstimate, targetOptions, estimate } from './estimate.js';
 import { newSpend, addCount, mergeSpend, costOf, uses } from './spend.js';
-import { PRICES, loadPrices, priceOf, setOverride, refreshPrices, fmtDivine } from './prices.js';
+import { PRICES, loadPrices, priceOf, setOverride, fmtDivine } from './prices.js';
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -25,7 +25,6 @@ const S = {
   spend: newSpend(),   // what this item has cost so far (counts of everything used up)
   prior: newSpend(),   // spend on earlier items this session, so the session total keeps growing across Reset item
   spendOpen: pref('spendOpen') === '1',   // cost breakdown expanded
-  priceMsg: '', refreshing: false, priceLeague: '',   // "Refresh prices" status line and the league to refresh
   usableOnly: pref('usableOnly') === '1',   // hide currencies that cannot be used on this item
   howtoOff: pref('howtoOff') === '1',       // the "how it works" banner was dismissed
 };
@@ -486,6 +485,7 @@ const WHY = {
 function whyNot(it, m) {
   if (!handlerImplemented(m.handler)) return 'Not simulated yet';
   for (const c of m.constraints || []) if (!checkConstraints(it, [c])) return WHY[c] || 'Not usable on this item right now';
+  if (catalystMaxed(it, m.handler)) return 'Catalyst quality is already at the maximum';
   for (const c of HANDLER_EXTRA[handlerBase(m.handler)] || []) if (!checkConstraints(it, [c])) return WHY[c] || 'Not usable on this item right now';
   if (m.handler === 'poe2_essence' && !essenceApplicable(it, m.essence)) return it.rarity === 'magic' || it.rarity === 'normal' ? 'No mod to add on this item' : 'This essence cannot add a mod here';
   if (m.handler === 'poe2_distilled_emotions' && !emotionApplicable(it, m.emotion.item)) return 'No modifier to add on this jewel';
@@ -620,13 +620,17 @@ function renderCurrencies() {
 }
 
 let TARGETS = null;
+const chipsHtml = mod => tagChips(mod).map(t => `<span class="tagchip">${esc(tagLabel(t))}</span>`).join('');
+/** Does the item's catalyst quality boost this mod (its family carries the catalyst's tag)? */
+const boostedByCatalyst = (it, mod) => !!it.catalyst?.quality && (DB.groups.get(mod.group)?.tags || []).includes(catalystTagId(it.catalyst.tag));
 const modHtml = (m, idx) => {
   const mod = DB.mods.get(m.id);
   const e = poolEntry(S.item.classId, m.id);
   const kind = affixOf(mod) || '';
   const faction = factionOf(mod);
   return `<div class="mod ${kind} ${m.fractured ? 'fractured' : ''} ${m.desecrated ? 'desecrated' : ''} ${m.crafted ? 'is-crafted' : ''} ${TARGETS?.cands.some(c => c.m === m) ? 'target' : ''}" data-remove="${idx}">${modLines(mod, m.rolls, S.item).map(esc).join('<br>')}
-    <span class="meta"><b>${kind}</b> “${esc(DB.text(mod.label))}” · ${e ? 'tier ' + e.tier : 'special'} · mod lvl ${mod.minlvl}${m.crafted ? ' · <b class="crafted">crafted</b>' : ''}${m.desecrated ? ` · <b class="desec">desecrated${faction ? ' · ' + faction : ''}</b>` : ''}${m.fractured ? ' · <b class="frac">fractured</b>' : ''}</span></div>`;
+    <span class="meta"><b>${kind}</b> “${esc(DB.text(mod.label))}” · ${e ? 'tier ' + e.tier : 'special'} · mod lvl ${mod.minlvl}${m.crafted ? ' · <b class="crafted">crafted</b>' : ''}${m.desecrated ? ` · <b class="desec">desecrated${faction ? ' · ' + faction : ''}</b>` : ''}${m.fractured ? ' · <b class="frac">fractured</b>' : ''}</span>
+    <span class="mod-tags">${chipsHtml(mod)}${boostedByCatalyst(S.item, mod) ? ` <b class="cat-boost" title="The ${esc(S.item.catalyst.tag)} catalyst quality (+${S.item.catalyst.quality}%) scales this modifier">+${S.item.catalyst.quality}% ${esc(S.item.catalyst.tag)} quality</b>` : ''}</span></div>`;
 };
 
 function itemName(it) {
@@ -815,8 +819,6 @@ function renderSpend() {
     ? `<div class="spend-warn" title="${esc(unpriced.join(', '))}">⚠ ${unpriced.length} unpriced item${unpriced.length > 1 ? 's' : ''} counted as 0: ${esc(unpriced.slice(0, 3).join(', '))}${unpriced.length > 3 ? '…' : ''}</div>`
     : '';
   const source = live ? `poe.ninja · ${esc(live.league)} · ${timeAgo(live.fetchedAt)}` : 'Craft of Exile snapshot (no live prices saved yet)';
-  const leagueOption = l => `<option ${(S.priceLeague || live.league) === l ? 'selected' : ''}>${esc(l)}</option>`;
-  const select = live?.leagues?.length ? `<select id="priceLeague" aria-label="League">${live.leagues.map(leagueOption).join('')}</select>` : '';
   const toggle = n ? `<button class="spend-toggle" data-spend-toggle aria-expanded="${S.spendOpen}">${S.spendOpen ? '▾' : '▸'} Breakdown</button>` : '';
   const rows = n && S.spendOpen ? `<div class="spend-rows">${item.rows.map(spendRow).join('')}</div>` : '';
   const clear = hasPrior || n ? '<button class="mini" id="clearSpend" title="Set this item and the session total back to 0">Clear</button>' : '';
@@ -827,11 +829,8 @@ function renderSpend() {
     ${warn}${toggle}${rows}
     <div class="spend-foot">
       <span class="src" title="Estimates in Divine Orbs: market values, not guaranteed trade prices.">${source}</span>
-      <span class="spend-actions">${select}
-        <button class="mini" id="refreshPrices" ${S.refreshing ? 'disabled' : ''} title="Download current prices from poe.ninja (needs the local server)">${S.refreshing ? 'Refreshing…' : 'Refresh prices'}</button>${clear}
-      </span>
-    </div>
-    ${S.priceMsg ? `<div class="spend-msg">${esc(S.priceMsg)}</div>` : ''}`;
+      <span class="spend-actions">${clear}</span>
+    </div>`;
 }
 
 // ---------- cost estimator ("repeat until I get ...") ----------
@@ -938,19 +937,6 @@ async function runEstimate() {
   if (S.est === e) { e.running = false; renderEstimator(); }
 }
 
-async function doRefreshPrices() {
-  if (S.refreshing) return;
-  S.refreshing = true; S.priceMsg = ''; renderSpend();
-  try {
-    const doc = await refreshPrices(S.priceLeague || undefined);
-    S.priceLeague = doc.league;
-    S.priceMsg = `Updated ${Object.keys(doc.byName).length} prices (${doc.league}).`;
-  } catch (e) {
-    S.priceMsg = e.message;
-  }
-  S.refreshing = false; renderSpend();
-}
-
 function clearSpend() {
   S.spend = newSpend(); S.prior = newSpend();
   for (const h of S.history) delete h.__spend;   // earlier steps no longer carry a spend to restore
@@ -997,7 +983,7 @@ function renderPool() {
       const isOpen = S.openFamilies.has(g) || !!q;
       const famPct = chance ? f.arr.reduce((s, e) => s + (chance.map.get(e.mod.id) || 0), 0) : 0;
       h += `<div class="fam ${present.has(g) ? 'present' : ''} ${isOpen ? 'open' : ''}">
-        <div class="fam-name" data-fam="${g}"><span>${esc(f.text)}${f.arr[0].influence !== 6 ? ' <b class="desec">meta rune pool</b>' : ''}</span><small>${chance ? (famPct * 100).toFixed(famPct < 0.1 ? 2 : 1) + '%' : f.arr.length + ' tiers'}</small></div>
+        <div class="fam-name" data-fam="${g}"><span>${esc(f.text)}${f.arr[0].influence !== 6 ? ' <b class="desec">meta rune pool</b>' : ''}${chipsHtml(f.arr[0].mod)}</span><small>${chance ? (famPct * 100).toFixed(famPct < 0.1 ? 2 : 1) + '%' : f.arr.length + ' tiers'}</small></div>
         <div class="tiers">`;
       for (const e of f.arr) {
         const p = chance?.map.get(e.mod.id);
@@ -1038,7 +1024,7 @@ function refColumn(secId, kind, entries, weightOf) {
   for (const f of fams) {
     const key = secId + '|' + f.arr[0].mod.group;
     const faction = f.arr[0].faction;
-    const chips = tagChips(f.arr[0].mod).map(t => `<span class="tagchip">${t}</span>`).join('');
+    const chips = chipsHtml(f.arr[0].mod);
     const maxLvl = Math.max(...f.arr.map(e => e.mod.minlvl));
     h += `<div class="fam ref ${S.openPFam.has(key) || !!q ? 'open' : ''}">
       <div class="fam-name" data-pfam="${key}"><span>${esc(f.text)}${faction ? ` <b class="faction desec-${faction}">${faction}</b>` : ''}${chips}</span>
@@ -1282,7 +1268,7 @@ document.addEventListener('click', e => {
     modalAction(modalTarget.dataset.modal); return;
   }
   if (S.openCurrency && !e.target.closest('.cur-wrap')) { S.openCurrency = null; renderCurrencies(); }
-  const t = e.target.closest('[data-group],[data-class],[data-base],[data-crumb],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-howto-dismiss],#openEstimate,#estRun,#estCancel,[data-est-close],[data-spend-toggle],#refreshPrices,#clearSpend,[data-omen],[data-omen-off],[data-pin],[data-reveal],[data-pick],[data-fam],[data-pfam],[data-psec],[data-lichf],[data-add],[data-addref],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#itemBox');
+  const t = e.target.closest('[data-group],[data-class],[data-base],[data-crumb],[data-method],[data-family],[data-socket],[data-tab],[data-sub],[data-howto-dismiss],#openEstimate,#estRun,#estCancel,[data-est-close],[data-spend-toggle],#clearSpend,[data-omen],[data-omen-off],[data-pin],[data-reveal],[data-pick],[data-fam],[data-pfam],[data-psec],[data-lichf],[data-add],[data-addref],[data-remove],#change,#reset,#resetItem,#undo,#revealReroll,#revealCancel,#itemBox');
   if (!t) return;
   if (t.id === 'openEstimate') {
     openEstimate();
@@ -1296,8 +1282,6 @@ document.addEventListener('click', e => {
     closeEstimate();
   } else if (t.dataset.spendToggle != null) {
     S.spendOpen = !S.spendOpen; pref('spendOpen', S.spendOpen ? '1' : '0'); renderSpend();
-  } else if (t.id === 'refreshPrices') {
-    doRefreshPrices();
   } else if (t.id === 'clearSpend') {
     clearSpend();
   } else if (t.dataset.howtoDismiss != null) {
@@ -1386,7 +1370,6 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   if (e.target.id === 'estTarget' && S.est) { S.est.group = +e.target.value; S.est.maxTier = 1; S.est.result = null; renderEstimator(); }
   if (e.target.id === 'estTier' && S.est) { S.est.maxTier = +e.target.value; S.est.result = null; }
-  if (e.target.id === 'priceLeague') { S.priceLeague = e.target.value; S.priceMsg = 'Press Refresh prices to load ' + e.target.value + '.'; renderSpend(); }
   if (e.target.dataset?.priceName) { const v = e.target.value.trim(); setOverride(e.target.dataset.priceName, v === '' ? null : +v); renderSpend(); }
   if (e.target.id === 'usableOnly') { S.usableOnly = e.target.checked; pref('usableOnly', S.usableOnly ? '1' : '0'); renderCurrencies(); }
   if (e.target.id === 'includeNormal') { ctx.settings.includeNormal = e.target.checked; renderCraft(); }
@@ -1424,5 +1407,5 @@ document.addEventListener('keydown', e => {
   if (p.get('class')) S.cls = DB.classes.get(+p.get('class'));
   renderAll();
   if (p.get('item') && DB.items.get(+p.get('item'))) selectBase(DB.items.get(+p.get('item')));
-  window.__craft = { openEstimate, undo, costOf, uses, charge, PRICES, priceOf, setOverride, refreshPrices, fmtDivine, selectBase, renderAll, S, DB, ctx, apply, renderCraft, openReveal, pickReveal, CATALOGUE, allMethods, findMethod }; // debug handle
+  window.__craft = { openEstimate, undo, costOf, uses, charge, PRICES, priceOf, setOverride, fmtDivine, selectBase, renderAll, S, DB, ctx, apply, renderCraft, openReveal, pickReveal, CATALOGUE, allMethods, findMethod }; // debug handle
 })();

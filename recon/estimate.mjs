@@ -58,7 +58,7 @@ ok(parseFloat(costRow[1].replace(/[^0-9.]/g, '')) > 100, 'cost in divine shown: 
 // the live item and omens must be untouched
 const after = await p.evaluate(() => ({ mods: window.__craft.S.item.mods.length, uses: window.__craft.uses(window.__craft.S.spend) }));
 ok(after.mods === 2 && after.uses === 0, 'estimate did not touch the item or the spend');
-await p.screenshot({ path: (process.env.SHOTS || '') + 'estimate.png' });
+await p.screenshot({ path: (process.env.SHOTS || 'recon/') + 'estimate.png' });
 
 // 4. already-there target
 await p.click('.modal-actions [data-est-close]');

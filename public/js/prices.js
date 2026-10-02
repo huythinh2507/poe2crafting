@@ -3,7 +3,7 @@
 import { DB } from './data.js';
 
 export const PRICES = {
-  live: null,        // prices-live.json: { league, fetchedAt, leagues, rates, byName }
+  live: null,        // prices-live.json: { league, fetchedAt, rates, byName }
   coe: new Map(),    // item name -> divine, from the Craft of Exile snapshot bundled with the data
   overrides: {},     // item name -> divine, typed in by the user
 };
@@ -46,21 +46,6 @@ export function setOverride(name, value) {
   if (value == null || !Number.isFinite(value) || value < 0) delete PRICES.overrides[name];
   else PRICES.overrides[name] = value;
   storage.write(PRICES.overrides);
-}
-
-/** Ask the local server to download fresh prices from poe.ninja. Throws a readable Error when it cannot. */
-export async function refreshPrices(league) {
-  let res;
-  try {
-    res = await fetch('/api/refresh-prices' + (league ? '?league=' + encodeURIComponent(league) : ''), { method: 'POST' });
-  } catch {
-    throw new Error('Cannot reach the server. Refreshing needs the local server (npm start).');
-  }
-  if (res.status === 404 || res.status === 405) throw new Error('Live refresh only works with the local server (npm start). On this site the prices are updated by the site owner (GitHub Action).');
-  const doc = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(doc?.error || `Refresh failed (HTTP ${res.status})`);
-  PRICES.live = doc;
-  return doc;
 }
 
 /** Divine Orbs as a short string: 2.47, 0.0123, 0.00004. Decimals are fine: this is an estimate. */

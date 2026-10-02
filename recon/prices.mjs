@@ -1,4 +1,4 @@
-// Regression test for public/js/prices.js and the /api/refresh-prices endpoint. Run with the server up: node recon/prices.mjs
+// Regression test for public/js/prices.js. Run with the server up: node recon/prices.mjs
 import { chromium } from 'playwright';
 let fails = 0;
 const ok = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) fails++; };
@@ -41,11 +41,6 @@ ok(r.cleared?.source === 'live', 'override can be cleared');
 ok(!r.coeOnly || r.coeOnly.source === 'coe', 'CoE-only item falls back to CoE');
 console.log(`coverage: ${r.total - r.unpriced.length}/${r.total} priced; unpriced (${r.unpriced.length}): ${r.unpriced.slice(0, 40).join(' | ')}`);
 
-// server: POST works but is limited to one per minute; GET is not an API route
-const post = await p.evaluate(async () => (await fetch('/api/refresh-prices', { method: 'POST' })).status);
-ok(post === 200 || post === 429, 'refresh endpoint answers (' + post + ')');
-const again = await p.evaluate(async () => (await fetch('/api/refresh-prices', { method: 'POST' })).status);
-ok(again === 429, 'second refresh within a minute is refused (' + again + ')');
 ok(errs.length === 0, 'no page errors ' + errs.join('; '));
 await b.close();
 process.exit(fails ? 1 : 0);

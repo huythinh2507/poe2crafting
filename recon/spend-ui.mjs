@@ -1,6 +1,6 @@
 // UI test for the "Estimated cost" panel. Run with the server up: node recon/spend-ui.mjs
 import { chromium } from 'playwright';
-const OUT = process.env.SHOTS || '';
+const OUT = process.env.SHOTS || 'recon/';
 let fails = 0;
 const ok = (c, msg) => { console.log((c ? 'PASS ' : 'FAIL ') + msg); if (!c) fails++; };
 const b = await chromium.launch();
@@ -36,18 +36,8 @@ const boxes = await p.evaluate(() => ['#tooltip', '#spend', '#log'].map(s => { c
 const shown = boxes.filter(Boolean);
 let overlap = false; for (let i = 1; i < shown.length; i++) if (shown[i].top < shown[i - 1].bottom - 0.5) overlap = true;
 ok(!overlap, 'tooltip / spend / log do not overlap: ' + shown.map(x => `${x.s}[${Math.round(x.top)}-${Math.round(x.bottom)}]`).join(' '));
-// refresh: not on a static host -> readable message, no crash
-await p.route('**/api/refresh-prices*', r => r.fulfill({ status: 404, body: 'not found' }));
-await p.click('#refreshPrices');
-await p.waitForFunction(() => document.querySelector('.spend-msg'));
-ok((await p.locator('.spend-msg').innerText()).includes('local server'), 'static-host refresh message: ' + await p.locator('.spend-msg').innerText());
-await p.unroute('**/api/refresh-prices*');
-// refresh against the real server (may be rate limited)
-await p.waitForTimeout(100);
-await p.click('#refreshPrices');
-await p.waitForFunction(() => !document.querySelector('#refreshPrices').disabled, null, { timeout: 60000 });
-ok(/Updated \d+ prices|less than a minute/.test(await p.locator('.spend-msg').innerText()), 'server refresh: ' + await p.locator('.spend-msg').innerText());
 // Clear
+ok((await p.locator('#refreshPrices, #priceLeague').count()) === 0, 'no refresh button or league picker');
 await p.click('#clearSpend');
 ok((await p.locator('.spend-sub').innerText()).includes('0 uses'), 'Clear sets spend back to 0');
 await p.screenshot({ path: OUT + 'spend-ui.png' });

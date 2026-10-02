@@ -4,10 +4,11 @@ export const DB = {};
 const strip = s => (s || '').replace(/\[([^\]|]*)\|([^\]]*)\]/g, '$2').replace(/\[([^\]]*)\]/g, '$1');
 
 export async function loadData() {
-  const [raw, lang, weaponBases] = await Promise.all([
+  const [raw, lang, weaponBases, jewelRadius] = await Promise.all([
     fetch('data/data.json').then(r => r.json()),
     fetch('data/english.json').then(r => r.json()),
     fetch('data/weapon-bases.json').then(r => (r.ok ? r.json() : {})).catch(() => ({})),   // optional: scraped from poe2db
+    fetch('data/jewel-radius.json').then(r => (r.ok ? r.json() : {})).catch(() => ({})),   // optional: Small / Notable radius modifiers, from poe2db
   ]);
   const byId = block => {
     const m = new Map();
@@ -16,6 +17,7 @@ export async function loadData() {
   };
   DB.raw = raw;
   DB.weaponBases = weaponBases;
+  DB.jewelRadius = jewelRadius;   // modifier key -> 'Small' | 'Notable' (Time-Lost jewel radius modifiers)
   DB.L = lang;
   DB.text = i => (i == null ? '' : strip(lang[i]));
   DB.categories = raw.categories.entries;
@@ -175,10 +177,12 @@ export function specialPools(classId) {
 
 // Tag chips shown next to a mod family (the usual poe2db-style damage / element / defence tags).
 const CHIP_TAGS = ['damage', 'elemental', 'fire', 'cold', 'lightning', 'chaos', 'physical', 'attack', 'caster', 'minion', 'speed',
-  'critical', 'life', 'mana', 'resistance', 'attribute', 'ailment', 'curse', 'armour', 'evasion', 'defences', 'poison', 'bleed'];
-export function tagChips(mod) {
+  'critical', 'life', 'mana', 'resistance', 'attribute', 'ailment', 'curse', 'armour', 'evasion', 'energy_shield', 'defences', 'aura', 'poison', 'bleed'];
+export const tagLabel = key => key.replace(/_/g, ' ');
+/** The tags of a mod's family worth showing (poe2db-style), in a fixed order; `limit` caps how many. */
+export function tagChips(mod, limit = 6) {
   const keys = (DB.groups.get(mod.group)?.tags || []).map(t => DB.raw.tags.entries.find(x => x.id === t)?.key);
-  return CHIP_TAGS.filter(k => keys.includes(k)).slice(0, 3);
+  return CHIP_TAGS.filter(k => keys.includes(k)).slice(0, limit);
 }
 
 // ---- Base item stats ----------------------------------------------------------------------------------------------
