@@ -1,6 +1,6 @@
 # PoE2 Crafting
 
-Local Path of Exile 2 crafting emulator, inspired by Craft of Exile. Vanilla JS, no build step.
+Path of Exile 2 crafting emulator
 
 **Live demo: https://huythinh2507.github.io/poe2crafting/**
 
