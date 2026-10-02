@@ -4,9 +4,9 @@ import { DB, classPool, lichPool, poolFor, corruptionPool, affixOf, essenceModId
 export const MAX_AFFIX = { normal: [0, 0], magic: [1, 1], rare: [3, 3] };
 export const MAX_QUALITY = 20;
 export const MAX_QUALITY_VAAL = 30; // infusers may exceed the cap by up to 10%
-// Vaal Infusers (community-tested; GGG publishes no numbers): need the item at 20% quality or more, add 1-2% per use and
-// instead corrupt it (no quality gained) with a chance of 5% per point above 20%: 0% at 20%, 5% at 21% ... 45% at 29%.
-export const infuserCorruptChance = quality => Math.min(0.95, Math.max(0, quality - MAX_QUALITY) * 0.05);
+// Vaal Infusers (community-tested; GGG publishes no numbers): need the item at its quality cap (20%, more with +max quality), add 1-2% per use and
+// instead corrupt it (no quality gained) with a chance of 5% per point above the cap: 0% at the cap, 5% at +1% ... 45% at +9%.
+export const infuserCorruptChance = (quality, base = MAX_QUALITY) => Math.min(0.95, Math.max(0, quality - base) * 0.05);
 const infuserGain = () => 1 + Math.floor(Math.random() * 2);
 const REVEAL_OPTIONS = 3;
 
@@ -428,8 +428,9 @@ export const HANDLER_EXTRA = {
 // Jewellery has no plain quality to infuse: the Vaal Catalyst Infuser pushes the catalyst quality already on the item.
 const isJewellery = i => i.classId === 33 || i.classId === 34;
 const infuserQuality = i => (isJewellery(i) ? i.catalyst?.quality : i.quality) ?? 0;
-const infuserCap = i => (isJewellery(i) ? catalystCap(i) : MAX_QUALITY) + (MAX_QUALITY_VAAL - MAX_QUALITY);
-CONSTRAINTS.infuser_target = i => infuserQuality(i) >= MAX_QUALITY && infuserQuality(i) < infuserCap(i);
+const infuserBase = i => (isJewellery(i) ? catalystCap(i) : MAX_QUALITY); // the item's own quality cap (breach rings raise it)
+const infuserCap = i => infuserBase(i) + (MAX_QUALITY_VAAL - MAX_QUALITY);
+CONSTRAINTS.infuser_target = i => infuserQuality(i) >= infuserBase(i) && infuserQuality(i) < infuserCap(i);
 CONSTRAINTS.not_corrupted = i => !i.corrupted && !i.sanctified;
 CONSTRAINTS.not_locked = i => !i.lock;
 
@@ -946,9 +947,10 @@ const HANDLERS = {
   poe2_vaal: vaal,
   poe2_vaal_infuser: i => {
     const q = infuserQuality(i);
-    if (q < MAX_QUALITY || q >= infuserCap(i)) return null;
+    if (q < infuserBase(i) || q >= infuserCap(i)) return null;
+    const chance = infuserCorruptChance(q, infuserBase(i));
     // either the item corrupts (and gains nothing) or it gains 1-2% quality
-    if (Math.random() < infuserCorruptChance(q)) { i.corrupted = true; return note(`Corrupted (${Math.round(infuserCorruptChance(q) * 100)}% chance at ${q}% quality) - no quality gained`); }
+    if (Math.random() < chance) { i.corrupted = true; return note(`Corrupted (${Math.round(chance * 100)}% chance at ${q}% quality) - no quality gained`); }
     const to = Math.min(infuserCap(i), q + infuserGain());
     if (isJewellery(i)) {
       i.catalyst.quality = to;

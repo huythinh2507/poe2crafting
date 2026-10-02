@@ -69,7 +69,7 @@ const QUALITY_HINT = '+5% quality (normal) / +2% (magic) / +1% (rare), max 20%.'
 const HINTS = {
   poe2_fracture: 'Locks one random mod permanently. Needs a rare with 4+ mods.',
   poe2_vaal: '25% each: no change / reroll 1-3 mods / corruption enchant / +1 socket (casters: quality +-). Item becomes corrupted.',
-  poe2_vaal_infuser: 'Needs 20%+ quality. Each use adds 1-2% quality (up to 10% beyond the cap) or corrupts the item instead: 0% chance at 20% quality, +5% per point above (5% at 21% ... 45% at 29%). On rings and amulets it uses the catalyst quality. Community-tested numbers.',
+  poe2_vaal_infuser: 'Needs quality at the item cap (20%, higher with +max quality mods). Each use adds 1-2% quality (up to 10% beyond the cap) or corrupts the item instead: 0% chance at the cap, +5% per point above (5% at +1% ... 45% at +9%). On rings and amulets it uses the catalyst quality. Community-tested numbers.',
   hinekora_lock: 'Preview the exact result of the next currency used. Any other change removes it.',
   blacksmith_whetstone: QUALITY_HINT, arcanist_etcher: QUALITY_HINT, armourer_scrap: QUALITY_HINT, glassblower_bauble: QUALITY_HINT,
 };
@@ -475,7 +475,7 @@ const WHY = {
   weapon_quality_base: 'Weapons only', caster_quality_base: 'Wands and staves only', armour_quality_base: 'Armour only', flask_base: 'Flasks only',
   catalyst_base: 'Rings, amulets and belts only', refined_catalyst_base: 'Rings, amulets and belts only',
   not_maximum_quality: 'Quality is already at the maximum', socketable_base: 'This base has no sockets', not_maximum_sockets: 'Already at the maximum sockets',
-  has_empty_socket: 'No empty socket', ring_or_amulet_base: 'Rings and amulets only', infuser_target: 'Needs 20% or more quality, below its cap', can_be_rare: 'Cannot become Rare', no_fracture: 'Item already has a fractured modifier', not_locked: "Hinekora's Lock is already armed",
+  has_empty_socket: 'No empty socket', ring_or_amulet_base: 'Rings and amulets only', infuser_target: 'Needs quality at its cap or above, below cap +10%', can_be_rare: 'Cannot become Rare', no_fracture: 'Item already has a fractured modifier', not_locked: "Hinekora's Lock is already armed",
   max_item_level_64: 'Item level must be 64 or lower', not_desecrated: 'Item already has a desecrated modifier', has_unrevealed: 'No unrevealed modifier to reveal',
   desecration_base: 'Not usable on this item type', desecration_jawbone_base: 'Weapons, quivers and some jewellery only', desecration_rib_base: 'Armour only',
   desecration_collarbone_base: 'Rings, amulets and belts only', desecration_cranium_base: 'Jewels only', desecration_vertebrae_base: 'Waystones and tablets only',
