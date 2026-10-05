@@ -184,6 +184,11 @@ public sealed class EssenceBlock
 /// <summary>What a socketable does on one kind of item.</summary>
 public sealed class SocketStat
 {
+    [JsonPropertyName("index")] public int Index { get; set; }
+
+    /// <summary>The "increased effect of socketed ..." bonus scales this stat.</summary>
+    [JsonPropertyName("scaling")] public bool Scaling { get; set; }
+
     [JsonPropertyName("output")] public int Output { get; set; }
 
     [JsonPropertyName("range")]

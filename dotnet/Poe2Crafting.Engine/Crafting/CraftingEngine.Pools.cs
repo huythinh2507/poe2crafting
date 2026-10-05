@@ -24,8 +24,8 @@ public sealed partial class CraftingEngine
 
     /// <summary>Totals contributed by socketed meta runes ("+1 Suffix allowed", "Can roll Destruction modifiers", ...).</summary>
     public MetaBonus Bonus(CraftItem item) => new(
-        item.Socketed.Sum(s => s.ExtraSuffix),
-        item.Socketed.Sum(s => s.ExtraCrafted),
+        item.Socketed.Sum(s => ScaledCount(item, s, s.ExtraSuffix)),
+        item.Socketed.Sum(s => ScaledCount(item, s, s.ExtraCrafted)),
         item.Socketed.Where(s => s.UnlocksPool is not null).Select(s => s.UnlocksPool!.Value).ToHashSet(),
         item.Socketed.LastOrDefault(s => s.TransformTo is not null)?.TransformTo);
 

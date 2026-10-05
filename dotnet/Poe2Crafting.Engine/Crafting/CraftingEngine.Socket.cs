@@ -13,16 +13,33 @@ public sealed partial class CraftingEngine
     /// effects per item kind; the first that applies wins: martial weapon, caster weapon, armour,
     /// then the class-specific entry (keyed by class ENUM), then "all".
     /// </summary>
-    public string? SocketEffect(CraftItem item, Socketable socketable)
+    public string? SocketEffect(CraftItem item, Socketable socketable) =>
+        SocketStatOf(item, socketable) is { } stat ? SocketText(stat) : null;
+
+    private SocketStat? SocketStatOf(CraftItem item, Socketable socketable)
     {
         var classKey = Db.ClassEnum(item.ClassId).ToString(CultureInfo.InvariantCulture);
-        var stat = (IsMartial(item) ? socketable.Martial : null)
-                   ?? (IsCaster(item) ? socketable.Caster : null)
-                   ?? (IsArmour(item) ? socketable.Armour : null)
-                   ?? (socketable.ByClass is { } byClass && byClass.TryGetValue(classKey, out var s) ? s : null)
-                   ?? socketable.All;
-        return stat is null ? null : SocketText(stat);
+        return (IsMartial(item) ? socketable.Martial : null)
+               ?? (IsCaster(item) ? socketable.Caster : null)
+               ?? (IsArmour(item) ? socketable.Armour : null)
+               ?? (socketable.ByClass is { } byClass && byClass.TryGetValue(classKey, out var s) ? s : null)
+               ?? socketable.All;
     }
+
+    /// <summary>
+    /// "#% increased effect of Socketed Augment Items" (Sovereign Alloy mod) applies to every augment, "... of Socketed Runes"
+    /// (Aldur's Legacy) to runes only. They add. Only stats flagged <c>Scaling</c> in the data are scaled.
+    /// </summary>
+    public double SocketEffectPct(CraftItem item, bool isRune)
+    {
+        var pct = LocalStat(item, "local_socketed_items_effect_+%") + item.Socketed.Sum(s => s.AugmentEffect);
+        if (isRune) pct += LocalStat(item, "local_rune_effect_+%") + item.Socketed.Sum(s => s.RuneEffect);
+        return pct;
+    }
+
+    /// <summary>A whole-number meta effect ("+1 Suffix Modifier allowed") after the effect bonus: rounded down, so +1 becomes +2 at 100% or more.</summary>
+    private int ScaledCount(CraftItem item, SocketedAugment augment, int count) =>
+        count == 0 || !augment.Scaling ? count : (int)Math.Floor(count * (100 + SocketEffectPct(item, augment.IsRune)) / 100 + 1e-9);
 
     private string SocketText(SocketStat stat)
     {
@@ -104,11 +121,16 @@ public sealed partial class CraftingEngine
         if (!slots.Contains(slot)) return null;
 
         var meta = MetaEffects(effect);
+        var stat = SocketStatOf(item, socketable)!;
+        var statId = Db.StatId(stat.Index);
         var augment = new SocketedAugment
         {
             ItemId = socketable.Item, Limit = socketable.Limit, Name = Db.ItemName(socketable.Item),
             Lines = new List<string> { effect }, Bound = socketable.Bound,
             UnlocksPool = meta.UnlocksPool, ExtraSuffix = meta.ExtraSuffix, ExtraCrafted = meta.ExtraCrafted, TransformTo = meta.TransformTo,
+            IsRune = socketable.Classify.Contains("rune"), Scaling = stat.Scaling,
+            RuneEffect = statId == "local_rune_effect_+%" ? stat.Range[0] : 0,
+            AugmentEffect = statId == "local_socketed_items_effect_+%" ? stat.Range[0] : 0,
         };
 
         var replaced = slot < item.Socketed.Count ? item.Socketed[slot] : null;

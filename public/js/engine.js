@@ -130,12 +130,29 @@ const affixOfMod = m => affixOf(DB.mods.get(m.id));
 export function bonus(item) {
   const b = { suffix: 0, crafted: 0, influences: new Set(), transform: null };
   for (const s of item.socketed) {
-    b.suffix += s.suffix || 0;
-    b.crafted += s.crafted || 0;
+    b.suffix += scaledCount(item, s, s.suffix);
+    b.crafted += scaledCount(item, s, s.crafted);
     if (s.influence) b.influences.add(s.influence);
     if (s.transform) b.transform = s.transform;
   }
   return b;
+}
+
+/**
+ * "#% increased effect of Socketed Augment Items" (Sovereign Alloy) applies to every augment; "#% increased effect of Socketed Runes"
+ * (Aldur's Legacy) to runes only. The two add. Only augment stats flagged `scaling` in the data are scaled (the effect stats themselves are not).
+ */
+export function socketEffectPct(item, isRune) {
+  return localStat(item, 'local_socketed_items_effect_+%') + (isRune ? localStat(item, 'local_rune_effect_+%') : 0);
+}
+const socketScale = (item, rec) => (rec.scaling ? socketEffectPct(item, rec.rune) : 0);
+/** A whole-number meta effect ("+1 Suffix Modifier allowed") after the effect bonus: rounded down, so +1 becomes +2 at 100% or more. */
+const scaledCount = (item, rec, n) => (n ? Math.floor(n * (100 + socketScale(item, rec)) / 100 + 1e-9) : 0);
+/** The lines of a socketed augment with the item's socketed-effect bonus applied to their numbers. */
+export function socketLines(item, rec) {
+  const pct = socketScale(item, rec);
+  if (!pct) return rec.lines;
+  return rec.lines.map(l => l.replace(/\d+(?:\.\d+)?/g, n => fmtNum(rec.suffix || rec.crafted ? Math.floor(+n * (100 + pct) / 100 + 1e-9) : Math.round(+n * (100 + pct)) / 100)));
 }
 
 /** Extra prefix / suffix slots from the base's own implicits (Dusk Ring: +1 prefix, -1 suffix; Penumbra: +2 / -2; Gloam and Tenebrous the reverse). */
@@ -708,8 +725,9 @@ function localRuneStats(st) {
   if (!st.local) return [];
   const id = DB.raw.stats[st.index]?.id;
   const added = id?.match(/^local_minimum_added_(\w+)_damage$/);
-  if (added) return [{ id, value: st.range[0] }, { id: `local_maximum_added_${added[1]}_damage`, value: st.range[1] }];
-  return [{ id, value: st.range[0] }];
+  const scaling = !!st.scaling;
+  if (added) return [{ id, value: st.range[0], scaling }, { id: `local_maximum_added_${added[1]}_damage`, value: st.range[1], scaling }];
+  return [{ id, value: st.range[0], scaling }];
 }
 
 // ---- Masterwork Rune: upgrades a socketed rune by one tier (Lesser > Normal > Greater > Perfect), in place ----
@@ -756,7 +774,7 @@ function socket(item, _o, method) {
   const st = socketStat(item, e);
   // local stats (% increased Physical Damage, Armour, ...) change the item's own displayed numbers
   const localStats = localRuneStats(st);
-  const rec = { item: e.item, limit: e.limit, name, lines, localStats, bound: !!e.bound, ...metaEffects(lines.join(' ')) };
+  const rec = { item: e.item, limit: e.limit, name, lines, localStats, bound: !!e.bound, rune: e.classify?.[0] === 'rune', scaling: !!st.scaling, ...metaEffects(lines.join(' ')) };
   const replaced = item.socketed[slot];
   if (replaced) item.socketed[slot] = rec; else item.socketed.push(rec);
   const out = note(`Socketed ${name}: ${lines.join(' / ')}${replaced ? ` (destroyed ${replaced.name})` : ''}`);
@@ -779,7 +797,7 @@ function upgradeRune(item, slot) {
   const next = upgradeOf(item, old);
   if (!next) return null;
   const lines = socketEffect(item, next);
-  const rec = { item: next.item, limit: next.limit, name: socketableName(next), lines, localStats: localRuneStats(socketStat(item, next)), bound: !!next.bound, ...metaEffects(lines.join(' ')) };
+  const rec = { item: next.item, limit: next.limit, name: socketableName(next), lines, localStats: localRuneStats(socketStat(item, next)), bound: !!next.bound, rune: true, scaling: !!socketStat(item, next).scaling, ...metaEffects(lines.join(' ')) };
   item.socketed[slot] = rec;
   return note(`Masterwork Rune: ${old.name} became ${rec.name} (${lines.join(' / ')})`);
 }
@@ -1103,9 +1121,11 @@ export function localStat(item, statId) {
   for (const m of [...item.mods, ...item.implicits, ...item.corruption]) {
     DB.mods.get(m.id)?.stats.forEach((s, i) => { if (DB.raw.stats[s.index]?.id === statId) total += m.rolls[i] || 0; });
   }
-  for (const r of item.socketed) for (const l of r.localStats || []) if (l.id === statId) total += l.value;   // local runes
+  for (const r of item.socketed) for (const l of r.localStats || []) if (l.id === statId) total += scaledStat(item, r, l);   // local runes
   return total;
 }
+
+const scaledStat = (item, rec, l) => (l.scaling ? Math.round(l.value * (100 + socketEffectPct(item, rec.rune))) / 100 : l.value);
 
 const DEFENCE_KEYS = { armour: /armour|physical_damage_reduction_rating/, evasion: /evasion/, energyshield: /energy_shield/ };
 const DEFENCE_FLAT = { armour: 'local_base_physical_damage_reduction_rating', evasion: 'local_base_evasion_rating', energyshield: 'local_energy_shield' };
@@ -1120,7 +1140,7 @@ function defenceIncrease(item, kind) {
     });
   }
   for (const r of item.socketed) for (const l of r.localStats || [])
-    if (/^local_.*_\+%$/.test(l.id || '') && DEFENCE_KEYS[kind].test(l.id)) total += l.value;   // local runes (Iron Rune)
+    if (/^local_.*_\+%$/.test(l.id || '') && DEFENCE_KEYS[kind].test(l.id)) total += scaledStat(item, r, l);   // local runes (Iron Rune)
   return total;
 }
 

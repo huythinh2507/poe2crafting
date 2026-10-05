@@ -31,14 +31,17 @@ export async function loadData() {
 }
 
 export function classesOfGroup(groupId) {
-  return (DB.groupClasses[groupId] || []).map(id => DB.classes.get(id)).filter(Boolean);
+  return (DB.groupClasses[groupId] || []).map(id => DB.classes.get(id)).filter(c => c && basesOfClass(c.id).length);   // a class left with no craftable base (the "(BASE)" ones) is hidden
 }
 
 // Item domains with craftable bases: 1 = equipment, 11 = jewels, 8 = relics.
 const BASE_DOMAINS = new Set([1, 11, 8]);
+// Entries the game data lists as bases but that cannot be crafted, matched on the metadata key (never the name: Golden Mail and Golden Targe are real):
+// Timeless Jewels (in the Diamond class), the "Golden ..." Demigod uniques' bases and Golden Wreath, and the Energy Blades (Storm Blade bases).
+export const NOT_CRAFTABLE = /\/(JewelTimeless|HelmetWreath\d*|[A-Za-z]*Demigods?\d*|StormBlade(?:One|Two)Hand)$/;
 export function basesOfClass(classId) {
   return [...DB.items.values()]
-    .filter(i => i.class === classId && BASE_DOMAINS.has(i.domain) && i.drop)
+    .filter(i => i.class === classId && BASE_DOMAINS.has(i.domain) && i.drop && !NOT_CRAFTABLE.test(i.key))
     .sort((a, b) => a.drop - b.drop || DB.text(a.label).localeCompare(DB.text(b.label)));
 }
 

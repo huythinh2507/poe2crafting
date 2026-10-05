@@ -59,10 +59,19 @@ public sealed class SocketedAugment
     public int? UnlocksPool { get; set; }
     public string? TransformTo { get; set; }
 
+    // "Increased effect of socketed ..." (see CraftingEngine.SocketEffectPct). Meta counts above are the BASE values; Bonus() scales them.
+    public bool IsRune { get; set; }
+    public bool Scaling { get; set; }
+    /// <summary>"#% increased effect of Socketed Runes" this augment gives (Aldur's Legacy). Never scaled itself.</summary>
+    public double RuneEffect { get; set; }
+    /// <summary>"#% increased effect of Socketed Augment Items" this augment gives. Never scaled itself.</summary>
+    public double AugmentEffect { get; set; }
+
     public SocketedAugment Clone() => new()
     {
         ItemId = ItemId, Limit = Limit, Name = Name, Lines = new List<string>(Lines), Bound = Bound,
         ExtraSuffix = ExtraSuffix, ExtraCrafted = ExtraCrafted, UnlocksPool = UnlocksPool, TransformTo = TransformTo,
+        IsRune = IsRune, Scaling = Scaling, RuneEffect = RuneEffect, AugmentEffect = AugmentEffect,
     };
 }
 

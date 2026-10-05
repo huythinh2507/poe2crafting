@@ -83,9 +83,12 @@ public sealed partial class GameDatabase
     public string ItemName(int itemId) => Items.TryGetValue(itemId, out var i) ? Text(i.Label) : "";
 
     /// <summary>Droppable equipment bases of a class, lowest level first.</summary>
+    /// <summary>Metadata keys of entries the data lists as bases that cannot be crafted (Demigod uniques' bases, Storm Blade bases). Same rule as NOT_CRAFTABLE in data.js.</summary>
+    private static readonly System.Text.RegularExpressions.Regex NotCraftable = new(@"/(JewelTimeless|HelmetWreath\d*|[A-Za-z]*Demigods?\d*|StormBlade(?:One|Two)Hand)$");
+
     public IEnumerable<BaseItem> BasesOfClass(int classId) =>
         Raw.Items.Entries
-            .Where(i => i.ClassId == classId && i.Domain == 1 && (i.DropLevel ?? 0) > 0)
+            .Where(i => i.ClassId == classId && i.Domain == 1 && (i.DropLevel ?? 0) > 0 && !NotCraftable.IsMatch(i.Key))
             .OrderBy(i => i.DropLevel).ThenBy(i => Text(i.Label), StringComparer.Ordinal);
 
     /// <summary>Find a base item by exact name, e.g. "Runeforged Warlord Cuirass".</summary>

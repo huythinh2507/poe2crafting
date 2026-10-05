@@ -1,0 +1,41 @@
+// 5-suffix wand tech: Serle's Triumph (+1 suffix) scaled by Legacy of Runeseeker's Call (+75% runes) and a Sovereign Alloy (+20-30% augments).
+import { chromium } from 'playwright';
+const b = await chromium.launch();
+const p = await b.newPage();
+const errs = [];
+p.on('pageerror', e => errs.push(e.message));
+await p.goto('http://localhost:5173/');
+await p.waitForFunction(() => window.__craft);
+const R = await p.evaluate(async () => {
+  const E = await import('/js/engine.js'), D = await import('/js/data.js');
+  const { DB } = D;
+  const out = {};
+  const t = (k, ok, d = '') => { out[k] = (ok ? 'PASS ' : 'FAIL ') + d; };
+  const nameOf = e => DB.text(DB.items.get(e.item)?.label);
+  const find = n => DB.raw.socketables.entries.find(e => nameOf(e) === n);
+  const sock = (it, name, slot) => E.applyMethod(it, { handler: 'poe2_socketable', socket: find(name), slot, properties: [], constraints: [] });
+  const alloyMod = [...DB.raw.mods.entries].find(m => m.key === 'AlloyEffectOfSocketedAugments1');
+  const WAND = 45;
+  const mk = () => { const it = E.newItem(D.basesOfClass(WAND).pop(), 100); it.sockets = 2; it.rarity = 'rare'; return it; };
+  const addAlloy = (it, v) => { it.mods = it.mods.filter(m => m.id !== alloyMod.id); it.mods.push({ id: alloyMod.id, rolls: [v], crafted: true }); };
+  const suffixCap = it => E.maxAffix(it)[1];
+
+  let it = mk(); const base = suffixCap(it);
+  sock(it, "Serle's Triumph");
+  t('W1 Serle alone +1', suffixCap(it) === base + 1, `${base}->${suffixCap(it)}`);
+  t('W2 Runeseeker applies to wand', !!sock(it, "Legacy of Runeseeker's Call"));
+  t('W3 rune alone (75%) still +1', suffixCap(it) === base + 1 && E.socketEffectPct(it, true) === 75);
+  addAlloy(it, 24); t('W4 75+24=99 still +1', suffixCap(it) === base + 1, E.socketEffectPct(it, true));
+  addAlloy(it, 25); t('W5 75+25=100 gives +2', suffixCap(it) === base + 2, `${suffixCap(it)}`);
+  t('W6 tooltip line scaled', E.socketLines(it, it.socketed[0])[0].includes('+2'), E.socketLines(it, it.socketed[0])[0]);
+  t('W7 legacy rune line not scaled', E.socketLines(it, it.socketed[1])[0].includes('75'), E.socketLines(it, it.socketed[1])[0]);
+  it.mods = it.mods.filter(m => m.id !== alloyMod.id);
+  t('W8 alloy removed: back to +1', suffixCap(it) === base + 1);
+  let it2 = mk(); sock(it2, "Serle's Triumph"); addAlloy(it2, 30);
+  t('W9 alloy alone (30%) +1', suffixCap(it2) === base + 1);
+  return out;
+});
+for (const [k, v] of Object.entries(R)) console.log(k, v);
+if (errs.length) console.log('PAGE ERRORS', errs);
+await b.close();
+process.exit(Object.values(R).some(v => v.startsWith('FAIL')) || errs.length ? 1 : 0);

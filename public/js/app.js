@@ -1,5 +1,5 @@
 import { DB, loadData, classesOfGroup, basesOfClass, classPool, lichPool, specialPools, tagChips, poolEntry, affixOf, factionOf, essenceModIds, tagLabel } from './data.js';
-import { HANDLER_EXTRA, catalystMaxed, CATALYSTS, catalystTagId, isMasterwork, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, fullPool, rollMod, addModManually, setModValues, flagBlocked,
+import { HANDLER_EXTRA, catalystMaxed, CATALYSTS, catalystTagId, isMasterwork, emotionMods, emotionApplicable, catalystCap, newItem, applyMethod, foresee, addChances, essenceMod, essenceReplaces, socketEffect, socketSlots, essenceApplicable, fractureCandidates, checkConstraints, handlerImplemented, modLines, modTemplate, itemStats, openSlots, maxAffix, bonus, socketLines, fullPool, rollMod, addModManually, setModValues, flagBlocked,
   ctx, OMENS, omensConsumedBy, toggleOmen, togglePin, spendOmen, clearOmens, consumeOmens, removalPool, removalOpts, factionOmenApplies, craftedFull, desecratedChances, revealOptions, revealMod } from './engine.js';
 
 import { canEstimate, targetOptions, estimate } from './estimate.js';
@@ -757,10 +757,10 @@ function renderTooltip() {
     const cls = `socket ${s ? 'filled' : ''} ${s?.bound ? 'bound' : ''} ${targetable ? 'target' : ''}`;
     if (!s) return `<span class="${cls}" data-socket="${i}" title="Empty socket"></span>`;
     const art = s.item != null ? iconPath(s.item) : null;
-    const tip = s.name + ': ' + s.lines.join(' / ') + (s.bound ? '\nSocket-bound: cannot be removed or replaced' : '');
+    const tip = s.name + ': ' + socketLines(it, s).join(' / ') + (s.bound ? '\nSocket-bound: cannot be removed or replaced' : '');
     return `<span class="${cls}" data-socket="${i}" title="${esc(tip)}">${art ? `<img src="${art}" alt="" onerror="this.remove()">` : ''}${s.bound ? '<i class="lock">\u{1F512}</i>' : ''}</span>`;
   }).join('')}</div>` : '';
-  const augments = it.socketed.map(x => `<div class="augment">${esc(x.name)}: ${x.lines.map(esc).join(' / ')}</div>`).join('');
+  const augments = it.socketed.map(x => `<div class="augment">${esc(x.name)}: ${socketLines(it, x).map(esc).join(' / ')}</div>`).join('');
   const prefixes = it.mods.map((m, i) => [m, i]).filter(([m]) => affixOf(DB.mods.get(m.id)) === 'prefix');
   const suffixes = it.mods.map((m, i) => [m, i]).filter(([m]) => affixOf(DB.mods.get(m.id)) === 'suffix');
   const mods = [...prefixes, ...suffixes].map(([m, i]) => modHtml(m, i)).join('')
